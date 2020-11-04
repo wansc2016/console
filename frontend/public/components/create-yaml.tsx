@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { match as RouterMatch } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getYAMLTemplates } from '../models/yaml-templates';
 import { connectToPlural } from '../kinds';
 import { AsyncComponent } from './utils/async';
@@ -53,7 +54,38 @@ export const CreateYAML = connectToPlural((props: CreateYAMLProps) => {
     obj.apiVersion = apiVersionForModel(kindObj);
     obj.spec = obj.spec || {};
   }
-  const header = `Create ${kindObj.label}`;
+  const { t } = useTranslation();
+  const label = t(kindObj.label);
+  // t('demo~Group')
+  // t('demo~Role')
+  // t('demo~Service Account')
+  // t('demo~Service')
+  // t('demo~Pod')
+  // t('demo~Container')
+  // t('demo~Deployment')
+  // t('demo~Deployment Config')
+  // t('demo~Build Config')
+  // t('demo~Template')
+  // t('demo~Template Instance')
+  // t('demo~Image Stream')
+  // t('demo~Node')
+  // t('demo~Event')
+  // t('demo~Namespace')
+  // t('demo~Project')
+  // t('demo~Secret')
+  // t('demo~Cluster Role')
+  // t('demo~Role Binding')
+  // t('demo~Resource Access Review')
+  // t('demo~Persistent Volume')
+  // t('demo~Persistent Volume Claim')
+  // t('demo~Petset')
+  // t('demo~Stateful Set')
+  // t('demo~Network Policy')
+  // t('demo~Service Instance')
+  // t('demo~Service Binding')
+  // t('demo~API Service')
+  // t('demo~User')
+  const header = t('demo~Create {{label}}', { label });
 
   // TODO: if someone edits namespace, we'll redirect to old namespace
 

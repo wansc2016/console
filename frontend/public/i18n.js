@@ -55,6 +55,7 @@ i18n
         'custom-resource-definition',
         'dashboard',
         'details-page',
+        'demo',
         'editor',
         'email-receiver-form',
         'github-idp-form',
