@@ -381,7 +381,6 @@ export const ListPage = withFallback((props) => {
   if (!namespaced && usedNamespace) {
     return <ErrorPage404 />;
   }
-  const { t } = useTranslation();
   return (
     <MultiListPage
       autoFocus={autoFocus}
