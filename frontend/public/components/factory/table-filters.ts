@@ -274,6 +274,9 @@ export const tableFilters: TableFilterMap = {
     return statuses.selected.has(status) || !_.includes(statuses.all, status);
   },
   'node-disk-name': (name, disks) => fuzzyCaseInsensitive(name, disks?.path),
+  'image-name': (str, imageManifestVuln) => fuzzyCaseInsensitive(str, imageManifestVuln.spec.image),
+  vulnerability: (str, imageVulnerability) =>
+    fuzzyCaseInsensitive(str, imageVulnerability.vulnerability.name),
 };
 
 export interface TableFilterGroups {

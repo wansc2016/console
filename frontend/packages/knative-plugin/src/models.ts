@@ -1,7 +1,6 @@
 import { chart_color_cyan_400 as knativeServingColor } from '@patternfly/react-tokens/dist/js/chart_color_cyan_400';
 import { chart_color_red_300 as knativeEventingColor } from '@patternfly/react-tokens/dist/js/chart_color_red_300';
 import { K8sKind } from '@console/internal/module/k8s';
-import { BadgeType } from '@console/shared/src/components/badges/badge-factory';
 import {
   KNATIVE_EVENT_SOURCE_APIGROUP,
   KNATIVE_EVENT_SOURCE_APIGROUP_DEP,
@@ -9,6 +8,7 @@ import {
   KNATIVE_EVENT_MESSAGE_APIGROUP,
   KNATIVE_EVENTING_APIGROUP,
   STRIMZI_KAFKA_APIGROUP,
+  CAMEL_APIGROUP,
 } from './const';
 
 const apiVersion = 'v1';
@@ -52,7 +52,6 @@ export const KnativeEventingModel: K8sKind = {
   abbr: 'KE',
   namespaced: true,
   crd: true,
-  badge: BadgeType.TECH,
   color: knativeEventingColor.value,
 };
 
@@ -127,8 +126,8 @@ export const EventSourcePingModel: K8sKind = {
 };
 
 export const EventSourceContainerModel: K8sKind = {
-  apiGroup: KNATIVE_EVENT_SOURCE_APIGROUP_DEP,
-  apiVersion: 'v1alpha1',
+  apiGroup: KNATIVE_EVENT_SOURCE_APIGROUP,
+  apiVersion: 'v1alpha2',
   kind: 'ContainerSource',
   label: 'Container Source',
   labelPlural: 'Container Sources',
@@ -142,7 +141,7 @@ export const EventSourceContainerModel: K8sKind = {
 
 export const EventSourceApiServerModel: K8sKind = {
   apiGroup: KNATIVE_EVENT_SOURCE_APIGROUP,
-  apiVersion: 'v1alpha1',
+  apiVersion: 'v1alpha2',
   kind: 'ApiServerSource',
   label: 'ApiServerSource',
   labelPlural: 'ApiServerSources',
@@ -198,7 +197,7 @@ export const EventSourceSinkBindingModel: K8sKind = {
 
 export const EventingSubscriptionModel: K8sKind = {
   apiGroup: KNATIVE_EVENT_MESSAGE_APIGROUP,
-  apiVersion: 'v1',
+  apiVersion,
   kind: 'Subscription',
   label: 'Subscription',
   labelPlural: 'Subscriptions',
@@ -212,7 +211,7 @@ export const EventingSubscriptionModel: K8sKind = {
 
 export const EventingIMCModel: K8sKind = {
   apiGroup: KNATIVE_EVENT_MESSAGE_APIGROUP,
-  apiVersion: 'v1beta1',
+  apiVersion,
   kind: 'InMemoryChannel',
   label: 'InMemoryChannel',
   labelPlural: 'inmemorychannels',
@@ -226,7 +225,7 @@ export const EventingIMCModel: K8sKind = {
 
 export const EventingChannelModel: K8sKind = {
   apiGroup: KNATIVE_EVENT_MESSAGE_APIGROUP,
-  apiVersion: 'v1beta1',
+  apiVersion,
   kind: 'Channel',
   label: 'Channel',
   labelPlural: 'channels',
@@ -254,7 +253,7 @@ export const EventingKafkaChannelModel: K8sKind = {
 
 export const EventingBrokerModel: K8sKind = {
   apiGroup: KNATIVE_EVENTING_APIGROUP,
-  apiVersion: 'v1beta1',
+  apiVersion,
   kind: 'Broker',
   label: 'Broker',
   labelPlural: 'Brokers',
@@ -268,7 +267,7 @@ export const EventingBrokerModel: K8sKind = {
 
 export const EventingTriggerModel: K8sKind = {
   apiGroup: KNATIVE_EVENTING_APIGROUP,
-  apiVersion: 'v1',
+  apiVersion,
   kind: 'Trigger',
   label: 'Trigger',
   labelPlural: 'Triggers',
@@ -281,8 +280,8 @@ export const EventingTriggerModel: K8sKind = {
 };
 
 export const CamelIntegrationModel: K8sKind = {
-  apiGroup: 'camel.apache.org',
-  apiVersion: 'v1',
+  apiGroup: CAMEL_APIGROUP,
+  apiVersion,
   kind: 'Integration',
   label: 'Integration',
   labelPlural: 'Integrations',
@@ -317,6 +316,20 @@ export const KafkaTopicModel: K8sKind = {
   plural: 'kafkatopics',
   id: 'kafkatopic',
   abbr: 'KT',
+  namespaced: true,
+  crd: true,
+  color: knativeEventingColor.value,
+};
+
+export const CamelKameletBindingModel: K8sKind = {
+  apiGroup: CAMEL_APIGROUP,
+  apiVersion: 'v1alpha1',
+  kind: 'KameletBinding',
+  label: 'KameletBinding',
+  labelPlural: 'KameletBindings',
+  plural: 'kameletbindings',
+  id: 'kameletbinding',
+  abbr: 'KB',
   namespaced: true,
   crd: true,
   color: knativeEventingColor.value,

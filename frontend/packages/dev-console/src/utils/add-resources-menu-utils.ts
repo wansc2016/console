@@ -1,7 +1,12 @@
 import { K8sResourceKind, referenceFor } from '@console/internal/module/k8s';
 import { KebabOption } from '@console/internal/components/utils';
+import { UNASSIGNED_KEY } from '@console/topology/src/const';
 import { ImportOptions } from '../components/import/import-types';
-import { QUERY_PROPERTIES, UNASSIGNED_KEY } from '../const';
+import {
+  QUERY_PROPERTIES,
+  INCONTEXT_ACTIONS_CONNECTS_TO,
+  INCONTEXT_ACTIONS_SERVICE_BINDING,
+} from '../const';
 
 const PART_OF = 'app.kubernetes.io/part-of';
 
@@ -20,9 +25,19 @@ export const getAddPageUrl = (
     case ImportOptions.GIT:
       pageUrl = `/import/ns/${ns}`;
       params.append('importType', 'git');
+      contextSource &&
+        params.append(
+          QUERY_PROPERTIES.CONTEXT_ACTION,
+          JSON.stringify({ type: INCONTEXT_ACTIONS_CONNECTS_TO, payload: contextSource }),
+        );
       break;
     case ImportOptions.CONTAINER:
       pageUrl = `/deploy-image/ns/${ns}`;
+      contextSource &&
+        params.append(
+          QUERY_PROPERTIES.CONTEXT_ACTION,
+          JSON.stringify({ type: INCONTEXT_ACTIONS_CONNECTS_TO, payload: contextSource }),
+        );
       break;
     case ImportOptions.CATALOG:
       pageUrl = `/catalog/ns/${ns}`;
@@ -30,6 +45,11 @@ export const getAddPageUrl = (
     case ImportOptions.DOCKERFILE:
       pageUrl = `/import/ns/${ns}`;
       params.append('importType', 'docker');
+      contextSource &&
+        params.append(
+          QUERY_PROPERTIES.CONTEXT_ACTION,
+          JSON.stringify({ type: INCONTEXT_ACTIONS_CONNECTS_TO, payload: contextSource }),
+        );
       break;
     case ImportOptions.DATABASE:
       pageUrl = `/catalog/ns/${ns}`;
@@ -37,17 +57,26 @@ export const getAddPageUrl = (
       break;
     case ImportOptions.EVENTSOURCE:
       pageUrl = `/event-source/ns/${ns}`;
+      contextSource && params.append(QUERY_PROPERTIES.CONTEXT_SOURCE, contextSource);
       break;
     case ImportOptions.EVENTPUBSUB:
       pageUrl = `/add/ns/${ns}`;
       break;
     case ImportOptions.OPERATORBACKED:
       pageUrl = `/catalog/ns/${ns}`;
-      params.append('kind', JSON.stringify(['ClusterServiceVersion']));
+      params.append('catalogType', 'OperatorBackedService');
+      contextSource &&
+        params.append(
+          QUERY_PROPERTIES.CONTEXT_ACTION,
+          JSON.stringify({
+            type: INCONTEXT_ACTIONS_SERVICE_BINDING,
+            payload: contextSource,
+          }),
+        );
       break;
     case ImportOptions.HELMCHARTS:
       pageUrl = `/catalog/ns/${ns}`;
-      params.append('kind', JSON.stringify(['HelmChart']));
+      params.append('catalogType', 'HelmChart');
       break;
     case ImportOptions.SAMPLES:
       pageUrl = `/samples/ns/${ns}`;
@@ -62,9 +91,6 @@ export const getAddPageUrl = (
     params.append(QUERY_PROPERTIES.APPLICATION, appGroup);
   } else {
     params.append(QUERY_PROPERTIES.APPLICATION, UNASSIGNED_KEY);
-  }
-  if (contextSource) {
-    params.append(QUERY_PROPERTIES.CONTEXT_SOURCE, contextSource);
   }
   return `${pageUrl}?${params.toString()}`;
 };

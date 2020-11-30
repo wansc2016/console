@@ -45,7 +45,7 @@ import {
   useK8sWatchResource,
   WatchK8sResource,
 } from '@console/internal/components/utils/k8s-watch-hook';
-import { usePVCBaseImages } from '../../../hooks/use-pvc-base-images';
+import { useBaseImages } from '../../../hooks/use-base-images';
 import { DataVolumeModel } from '../../../models';
 import { createUploadPVC } from '../../../k8s/requests/cdi-upload/cdi-upload-requests';
 import { CDIUploadContext } from '../cdi-upload-provider';
@@ -81,27 +81,12 @@ const templatesResource: WatchK8sResource = {
 enum uploadErrorType {
   MISSING = 'missing',
   ALLOCATE = 'allocate',
-  TYPE = 'type',
   CERT = 'cert',
 }
 
 const uploadErrorMessage = {
   [uploadErrorType.MISSING]: 'File input is missing',
   [uploadErrorType.ALLOCATE]: 'Could not create persistent volume claim',
-  [uploadErrorType.TYPE]: (
-    <>
-      <p>
-        The format of the file you are uploading is not supported. Please use one of the supported
-        formats
-      </p>
-      <p>
-        <ExternalLink
-          text="Learn more about supported formats"
-          href={CDI_UPLOAD_SUPPORTED_TYPES_URL}
-        />
-      </p>
-    </>
-  ),
   [uploadErrorType.CERT]: (uploadProxy) => (
     <>
       It seems that your browser does not trust the certificate of the upload proxy. Please{' '}
@@ -127,6 +112,9 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
   ...props
 }) => {
   const operatingSystems = getTemplateOperatingSystems(commonTemplates);
+  const operatingSystemHaveDV = operatingSystems.find(
+    (os) => os?.baseImageName && os?.baseImageNamespace,
+  );
   const [accessModeHelp, setAccessModeHelp] = React.useState('Permissions to the mounted drive.');
   const [allowedAccessModes, setAllowedAccessModes] = React.useState(initialAccessModes);
   const [storageClass, setStorageClass] = React.useState('');
@@ -225,11 +213,11 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
   const handleGoldenCheckbox = (checked) => {
     setIsGolden(checked);
     if (checked) {
-      setNamespace(os?.dataVolumeNamespace);
+      setNamespace(os?.baseImageNamespace);
       if (pvcName && !os) {
         setPvcName('');
       } else {
-        setPvcName(os?.dataVolumeName);
+        setPvcName(os?.baseImageName);
       }
     }
     if (!checked) {
@@ -240,9 +228,9 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
   const handleOs = (newOs: string) => {
     const operatingSystem = operatingSystems.find((o) => o.id === newOs);
     setOs(operatingSystem);
-    setPvcName(operatingSystem?.dataVolumeName);
-    if (operatingSystem?.dataVolumeNamespace) {
-      setNamespace(operatingSystem.dataVolumeNamespace);
+    setPvcName(operatingSystem?.baseImageName);
+    if (operatingSystem?.baseImageNamespace) {
+      setNamespace(operatingSystem.baseImageNamespace);
     }
   };
 
@@ -257,7 +245,7 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
 
   React.useEffect(() => {
     const goldenImagePVC = goldenPvcs?.find(
-      (pvc) => getName(pvc) === os?.dataVolumeName && getNamespace(pvc) === os?.dataVolumeNamespace,
+      (pvc) => getName(pvc) === os?.baseImageName && getNamespace(pvc) === os?.baseImageNamespace,
     );
     if (goldenImagePVC) {
       setOsImageExists(true);
@@ -295,14 +283,16 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
             onDropAccepted: () => setIsFileRejected(false),
           }}
         />
-        <Checkbox
-          id="golden-os-switch"
-          className="kv--create-upload__golden-switch"
-          label="Attach this data to a Virtual Machine operating system"
-          isChecked={isGolden}
-          onChange={handleGoldenCheckbox}
-          isDisabled={isLoading}
-        />
+        {operatingSystemHaveDV && (
+          <Checkbox
+            id="golden-os-switch"
+            className="kv--create-upload__golden-switch"
+            label="Attach this data to a Virtual Machine operating system"
+            isChecked={isGolden}
+            onChange={handleGoldenCheckbox}
+            isDisabled={isLoading}
+          />
+        )}
       </div>
       {isGolden && (
         <>
@@ -321,17 +311,17 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
                 placeholder="--- Pick an Operating system ---"
                 isDisabled={!!os}
               />
-              {operatingSystems.map(({ id, name, dataVolumeName, dataVolumeNamespace }) =>
+              {operatingSystems.map(({ id, name, baseImageName, baseImageNamespace }) =>
                 goldenPvcs?.find(
                   (pvc) =>
-                    getName(pvc) === dataVolumeName && getNamespace(pvc) === dataVolumeNamespace,
+                    getName(pvc) === baseImageName && getNamespace(pvc) === baseImageNamespace,
                 ) ? (
                   <FormSelectOption
                     key={id}
                     value={id}
                     label={`${name || id} - Default data image already exists`}
                   />
-                ) : !dataVolumeName ? (
+                ) : !baseImageName ? (
                   <FormSelectOption
                     isDisabled
                     key={id}
@@ -353,8 +343,8 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
                   hideIcon
                   inline
                   kind={PersistentVolumeClaimModel.kind}
-                  name={os?.dataVolumeName}
-                  namespace={os?.dataVolumeNamespace}
+                  name={os?.baseImageName}
+                  namespace={os?.baseImageNamespace}
                 />
               </Alert>
             </div>
@@ -426,7 +416,7 @@ export const UploadPVCForm: React.FC<UploadPVCFormProps> = ({
             />
             <p className="help-block" id="request-size-help">
               Ensure your PVC size covers the requirements of the uncompressed image and any other
-              space requirements
+              space requirements.
             </p>
           </SplitItem>
         </Split>
@@ -471,6 +461,7 @@ export const UploadPVCPage: React.FC<UploadPVCPageProps> = (props) => {
   const [disableFormSubmit, setDisableFormSubmit] = React.useState(false);
   const [fileValue, setFileValue] = React.useState<File>(null);
   const [fileName, setFileName] = React.useState('');
+  const [fileNameExtension, setFileNameExtension] = React.useState('');
   const [isFileRejected, setIsFileRejected] = React.useState(false);
   const [error, setError] = React.useState<string>('');
   const [isAllocating, setIsAllocating] = React.useState(false);
@@ -478,7 +469,7 @@ export const UploadPVCPage: React.FC<UploadPVCPageProps> = (props) => {
   const [commonTemplates, loadedTemplates, errorTemplates] = useK8sWatchResource<TemplateKind[]>(
     templatesResource,
   );
-  const [goldenPvcs, loadedPvcs, errorPvcs] = usePVCBaseImages(commonTemplates);
+  const [goldenPvcs, loadedPvcs, errorPvcs] = useBaseImages(commonTemplates);
   const { uploads, uploadData, uploadProxyURL } = React.useContext(CDIUploadContext);
   const initialNamespace = props?.match?.params?.ns;
   const namespace = getNamespace(dvObj) || initialNamespace;
@@ -490,8 +481,6 @@ export const UploadPVCPage: React.FC<UploadPVCPageProps> = (props) => {
     e.preventDefault();
     if (!fileName) {
       setError(uploadErrorType.MISSING);
-    } else if (isFileRejected) {
-      setError(uploadErrorType.TYPE);
     } else {
       // checking valid certificate for proxy
       setCheckingCertificate(true);
@@ -529,6 +518,9 @@ export const UploadPVCPage: React.FC<UploadPVCPageProps> = (props) => {
   const handleFileChange = (value, filename) => {
     setFileName(filename);
     setFileValue(value);
+
+    setFileNameExtension(/[.][^.]+$/.exec(filename)?.toString());
+    setIsFileRejected(false);
     setError('');
   };
 
@@ -574,6 +566,24 @@ export const UploadPVCPage: React.FC<UploadPVCPageProps> = (props) => {
             inProgress={!loadedTemplates || !loadedPvcs || isCheckingCertificate}
             errorMessage={errorMessage}
           >
+            {isFileRejected && (
+              <Alert variant="warning" isInline title="File type extension">
+                <p>
+                  Based on the file extension it seems like you are trying to upload a file which is
+                  not supported (
+                  {fileNameExtension
+                    ? `detected file extension is '${fileNameExtension}'`
+                    : 'no file extention detected'}
+                  ).
+                </p>
+                <p>
+                  <ExternalLink
+                    text="Learn more about supported formats"
+                    href={CDI_UPLOAD_SUPPORTED_TYPES_URL}
+                  />
+                </p>
+              </Alert>
+            )}
             <ActionGroup className="pf-c-form">
               <Button
                 isDisabled={disableFormSubmit || isCheckingCertificate}
@@ -604,7 +614,7 @@ export const UploadPVCPage: React.FC<UploadPVCPageProps> = (props) => {
         onSuccessClick={() =>
           history.push(resourcePath(PersistentVolumeClaimModel.kind, getName(dvObj), namespace))
         }
-        onCancelFinish={() => history.push(resourcePath(PersistentVolumeClaimModel.kind))}
+        onCancelClick={() => history.push(resourcePath(PersistentVolumeClaimModel.kind))}
       />
     </>
   );

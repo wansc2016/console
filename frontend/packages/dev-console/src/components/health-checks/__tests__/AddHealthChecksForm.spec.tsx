@@ -2,10 +2,18 @@ import * as React from 'react';
 import AddHealthChecksForm from '../AddHealthChecksForm';
 import { shallow } from 'enzyme';
 import { LoadingBox, StatusBox } from '@console/internal/components/utils';
-import { sampleDeployments } from '../../topology/__tests__/topology-test-data';
+import { sampleDeployments } from '@console/shared/src/utils/__tests__/test-resource-data';
 import { Formik } from 'formik';
 
 let addHealthCheckWrapperProps: React.ComponentProps<typeof AddHealthChecksForm>;
+
+jest.mock('react-i18next', () => {
+  const reactI18next = require.requireActual('react-i18next');
+  return {
+    ...reactI18next,
+    useTranslation: () => ({ t: (key) => key }),
+  };
+});
 
 describe('HealthCheckWrapper', () => {
   beforeEach(() => {
@@ -34,7 +42,7 @@ describe('HealthCheckWrapper', () => {
   it('should show container not found error', () => {
     addHealthCheckWrapperProps.resource.loaded = true;
     const wrapper = shallow(<AddHealthChecksForm {...addHealthCheckWrapperProps} />);
-    expect(wrapper.find('div').text()).toEqual('Container not found');
+    expect(wrapper.find('div').text()).toEqual('devconsole~Container not found');
   });
 
   it('should load AddHealthCheck', () => {

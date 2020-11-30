@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 import { FormikProps, FormikValues } from 'formik';
+import { useTranslation } from 'react-i18next';
 import { FormFooter, FlexForm } from '@console/shared';
-import { LoadingInline } from '@console/internal/components/utils';
 import EventSourcesSelector from './event-sources/EventSourcesSelector';
 import EventSourceSection from './event-sources/EventSourceSection';
 import { EventSourceListData } from './import-types';
@@ -21,25 +21,27 @@ const EventSourceForm: React.FC<FormikProps<FormikValues> & OwnProps> = ({
   dirty,
   namespace,
   eventSourceStatus,
-}) => (
-  <FlexForm onSubmit={handleSubmit}>
-    {eventSourceStatus && !_.isEmpty(eventSourceStatus.eventSourceList) && (
-      <>
-        <EventSourcesSelector eventSourceList={eventSourceStatus.eventSourceList} />
-        <EventSourceSection namespace={namespace} />{' '}
-      </>
-    )}
-    {eventSourceStatus && !eventSourceStatus.loaded && <LoadingInline />}
-    <FormFooter
-      handleReset={handleReset}
-      errorMessage={status && status.submitError}
-      isSubmitting={isSubmitting}
-      submitLabel="Create"
-      disableSubmit={!dirty || !_.isEmpty(errors)}
-      resetLabel="Cancel"
-      sticky
-    />
-  </FlexForm>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <FlexForm onSubmit={handleSubmit}>
+      {eventSourceStatus && !_.isEmpty(eventSourceStatus.eventSourceList) && (
+        <>
+          <EventSourcesSelector eventSourceList={eventSourceStatus.eventSourceList} />
+          <EventSourceSection namespace={namespace} />{' '}
+        </>
+      )}
+      <FormFooter
+        handleReset={handleReset}
+        errorMessage={status && status.submitError}
+        isSubmitting={isSubmitting}
+        submitLabel={t('knative-plugin~Create')}
+        disableSubmit={!dirty || !_.isEmpty(errors)}
+        resetLabel={t('knative-plugin~Cancel')}
+        sticky
+      />
+    </FlexForm>
+  );
+};
 
 export default EventSourceForm;

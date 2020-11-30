@@ -3,6 +3,20 @@ import { shallow } from 'enzyme';
 import MonitoringTab from '../MonitoringTab';
 import MonitoringOverview from '../MonitoringOverview';
 
+jest.mock('@console/shared', () => {
+  const ActualShared = require.requireActual('@console/shared');
+  return {
+    ...ActualShared,
+    usePodsWatcher: () => {
+      return {
+        loaded: true,
+        loadError: '',
+        podData: {},
+      };
+    },
+  };
+});
+
 describe('Monitoring Tab', () => {
   const monTabProps: React.ComponentProps<typeof MonitoringTab> = {
     item: {
@@ -23,9 +37,6 @@ describe('Monitoring Tab', () => {
           },
         },
       },
-      buildConfigs: [],
-      routes: [],
-      services: [],
     },
   };
 

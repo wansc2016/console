@@ -4,11 +4,19 @@ import { YAMLEditorField } from '@console/shared';
 import FormSection from '@console/dev-console/src/components/import/section/FormSection';
 import YAMLEditorSection from '../YAMLEditorSection';
 
+jest.mock('react-i18next', () => {
+  const reactI18next = require.requireActual('react-i18next');
+  return {
+    ...reactI18next,
+    useTranslation: () => ({ t: (key) => key }),
+  };
+});
+
 jest.mock('formik', () => ({
   useFormikContext: jest.fn(() => ({
     setFieldValue: jest.fn(),
     setFieldTouched: jest.fn(),
-    values: { type: 'CamelSource', yamlData: '' },
+    values: { formData: { type: 'CamelSource' }, yamlData: '' },
   })),
 }));
 

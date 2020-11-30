@@ -1,32 +1,26 @@
 import * as React from 'react';
 import PodRingSet from '@console/shared/src/components/pod/PodRingSet';
-import { OverviewItem, usePluginsOverviewTabSection } from '@console/shared';
+import {
+  OverviewItem,
+  usePluginsOverviewTabSection,
+  useBuildConfigsWatcher,
+  useJobsForCronJobWatcher,
+} from '@console/shared';
 import { CronJobModel } from '../../models';
 import { CronJobKind } from '../../module/k8s';
 import { menuActions } from '../cron-job';
 import { DetailsItem, KebabAction, pluralize, ResourceSummary, Timestamp } from '../utils';
 import { ResourceOverviewDetails } from './resource-overview-details';
-import { PodsOverview } from './pods-overview';
+import { PodsOverviewMultiple } from './pods-overview';
 import { BuildOverview } from './build-overview';
 import { JobsOverview } from './jobs-overview';
 
 const CronJobOverviewDetails: React.SFC<CronJobOverviewDetailsProps> = ({
-  item: { obj: cronjob, pods: pods },
+  item: { obj: cronjob },
 }) => (
   <div className="overview__sidebar-pane-body resource-overview__body">
     <div className="resource-overview__pod-counts">
-      <PodRingSet
-        key={cronjob.metadata.uid}
-        podData={{
-          pods,
-          current: undefined,
-          previous: undefined,
-          isRollingOut: true,
-        }}
-        obj={cronjob}
-        resourceKind={CronJobModel}
-        path=""
-      />
+      <PodRingSet key={cronjob.metadata.uid} obj={cronjob} path="" />
     </div>
     <ResourceSummary resource={cronjob} showPodSelector>
       <DetailsItem label="Schedule" obj={cronjob} path="spec.schedule" />
@@ -48,12 +42,14 @@ const CronJobOverviewDetails: React.SFC<CronJobOverviewDetailsProps> = ({
 );
 
 const CronJobResourcesTab: React.SFC<CronJobResourcesTabProps> = ({ item }) => {
-  const { buildConfigs, pods, jobs, obj } = item;
+  const { obj } = item;
   const pluginComponents = usePluginsOverviewTabSection(item);
+  const { buildConfigs } = useBuildConfigsWatcher(obj);
+  const { jobs } = useJobsForCronJobWatcher(obj);
   return (
     <div className="overview__sidebar-pane-body">
-      <PodsOverview pods={pods} obj={obj} />
-      <JobsOverview jobs={jobs} pods={pods} obj={obj} />
+      <PodsOverviewMultiple obj={obj} podResources={jobs} />
+      <JobsOverview jobs={jobs} obj={obj} />
       <BuildOverview buildConfigs={buildConfigs} />
       {pluginComponents.map(({ Component, key }) => (
         <Component key={key} item={item} />

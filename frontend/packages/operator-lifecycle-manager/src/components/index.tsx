@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as _ from 'lodash';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   GroupVersionKind,
   referenceForGroupVersionKind,
@@ -11,13 +12,16 @@ import {
 } from '@console/internal/module/k8s';
 import { PackageManifestModel } from '../models';
 import {
+  APIServiceDefinition,
+  ClusterServiceVersionIcon,
   ClusterServiceVersionKind,
   CRDDescription,
-  APIServiceDefinition,
+  InstallPlanApproval,
+  InstallPlanKind,
   PackageManifestKind,
-  StepResource,
-  ClusterServiceVersionIcon,
   ProvidedAPI,
+  StepResource,
+  SubscriptionKind,
 } from '../types';
 import * as operatorLogo from '../operator.svg';
 
@@ -147,6 +151,46 @@ export const exampleForModel = (csv: ClusterServiceVersionKind, model: K8sKind) 
     ),
   );
 
+export const getManualSubscriptionsInNamespace = (
+  subscriptions: SubscriptionKind[],
+  namespace: string,
+) => {
+  return subscriptions?.filter(
+    (subscription) =>
+      subscription.metadata.namespace === namespace &&
+      subscription.spec.installPlanApproval === InstallPlanApproval.Manual,
+  );
+};
+
+export const OperatorsWithManualApproval: React.FC<OperatorsWithManualApprovalProps> = ({
+  subscriptions,
+}) => {
+  const { t } = useTranslation();
+  const subs = subscriptions
+    ?.map((subscription) => (
+      <strong key={subscription.metadata.uid}>{subscription.metadata.name}</strong>
+    ))
+    .map((sub, i) => (i > 0 ? [', ', sub] : sub));
+  return (
+    <>
+      {t('operator-hub-subscribe~operator', { count: subscriptions?.length })} {subs}
+    </>
+  );
+};
+
+export const NamespaceIncludesManualApproval: React.FC<NamespaceIncludesManualApprovalProps> = ({
+  subscriptions,
+  namespace,
+}) => (
+  <Trans ns="operator-hub-subscribe">
+    Installation namespace <strong>{{ namespace }}</strong> contains{' '}
+    <OperatorsWithManualApproval subscriptions={subscriptions} /> installed with manual approval,
+    and all operators installed in the same namespace will function as manual approval strategy. To
+    allow automatic approval, all operators installed in the namespace must use automatic approval
+    strategy.
+  </Trans>
+);
+
 export type ClusterServiceVersionLogoProps = {
   displayName: string;
   icon: ClusterServiceVersionIcon | string;
@@ -154,4 +198,37 @@ export type ClusterServiceVersionLogoProps = {
   version?: string;
 };
 
+const InstallPlanCSVNames: React.FC<InstallPlanReviewProps> = ({ installPlan }) =>
+  installPlan?.spec.clusterServiceVersionNames
+    .sort()
+    .map((CSVName, i) => <strong key={`${CSVName}-${i}`}>{CSVName}</strong>)
+    .map((CSVName, i) => (i > 0 ? <span key={`${CSVName}-${i}`}>, {CSVName}</span> : CSVName));
+
+export const InstallPlanReview: React.FC<InstallPlanReviewProps> = ({ installPlan }) => (
+  <p>
+    <Trans ns="operator-install-page">
+      Review the manual install plan for operators <InstallPlanCSVNames installPlan={installPlan} />
+      . Once approved, the following resources will be created in order to satisfy the requirements
+      for the components specified in the plan. Click the resource name to view the resource in
+      detail.
+    </Trans>
+  </p>
+);
+
+export type OperatorsWithManualApprovalProps = {
+  subscriptions: SubscriptionKind[];
+};
+
+export type NamespaceIncludesManualApprovalProps = {
+  namespace: string;
+  subscriptions: SubscriptionKind[];
+};
+
+export type InstallPlanReviewProps = {
+  installPlan: ClusterServiceVersionKind | InstallPlanKind;
+};
+
 ClusterServiceVersionLogo.displayName = 'ClusterServiceVersionLogo';
+OperatorsWithManualApproval.displayName = 'OperatorsWithManualApproval';
+NamespaceIncludesManualApproval.displayName = 'NamespaceIncludesManualApproval';
+InstallPlanReview.displayName = 'InstallPlanReview';

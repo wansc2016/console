@@ -3,7 +3,6 @@ import chalk from 'chalk';
 export class ValidationResult {
   private readonly errors: string[] = [];
 
-  // eslint-disable-next-line no-empty-function
   constructor(private readonly description: string) {}
 
   assertThat(condition: boolean, message: string) {
@@ -20,15 +19,21 @@ export class ValidationResult {
     return this.errors.length > 0;
   }
 
+  getErrors() {
+    return [...this.errors];
+  }
+
   formatErrors() {
     const prefix = `${chalk.bold(this.description)} (${this.errors.length} errors)\n\n`;
     const errorLines = this.errors.map((e) => `    ${chalk.red(e)}`);
     return prefix + errorLines.join('\n');
   }
 
-  report(throwOnErrors: boolean = true, console: Console = global.console) {
+  report(throwOnErrors: boolean = true) {
     if (this.hasErrors()) {
+      // eslint-disable-next-line no-console
       console.error(this.formatErrors());
+
       if (throwOnErrors) {
         throw new Error('Validation failed');
       }

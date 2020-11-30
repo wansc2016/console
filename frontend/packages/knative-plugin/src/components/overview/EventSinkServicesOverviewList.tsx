@@ -1,31 +1,26 @@
 import * as React from 'react';
 import * as _ from 'lodash';
+import { useTranslation } from 'react-i18next';
+import { usePodsWatcher } from '@console/shared';
 import {
   K8sResourceKind,
   referenceForGroupVersionKind,
   groupVersionFor,
-  PodKind,
 } from '@console/internal/module/k8s';
 import {
   ResourceLink,
   ExternalLink,
   SidebarSectionHeading,
 } from '@console/internal/components/utils';
-import { PodControllerOverviewItem } from '@console/shared';
 import { PodModel } from '@console/internal/models';
 import { PodsOverview } from '@console/internal/components/overview/pods-overview';
 
 export type EventSinkServicesOverviewListProps = {
   obj: K8sResourceKind;
-  pods?: PodKind[];
-  current?: PodControllerOverviewItem;
 };
 
-const EventSinkServicesOverviewList: React.FC<EventSinkServicesOverviewListProps> = ({
-  obj,
-  pods,
-  current,
-}) => {
+const EventSinkServicesOverviewList: React.FC<EventSinkServicesOverviewListProps> = ({ obj }) => {
+  const { t } = useTranslation();
   const {
     kind,
     apiVersion,
@@ -35,17 +30,19 @@ const EventSinkServicesOverviewList: React.FC<EventSinkServicesOverviewListProps
   } = obj;
   const { name: sinkName, kind: sinkKind, apiVersion: sinkApiversion } =
     spec?.sink?.ref || spec?.sink || {};
-  const sinkUri = status?.sinkUri;
-  const deploymentData = current?.obj?.metadata?.ownerReferences?.[0];
+  const sinkUri = spec?.sink?.uri || status?.sinkUri;
   const apiGroup = apiVersion.split('/')[0];
   const linkUrl = `/search/ns/${namespace}?kind=${PodModel.kind}&q=${encodeURIComponent(
     `${apiGroup}/${_.lowerFirst(kind)}=${name}`,
   )}`;
   const { group, version } = (sinkApiversion && groupVersionFor(sinkApiversion)) || {};
   const isSinkReference = !!(sinkKind && sinkName && group && version);
+  const { podData } = usePodsWatcher(obj, obj.kind, namespace);
+  const deploymentData = podData?.current?.obj?.metadata?.ownerReferences?.[0];
+
   return (
     <>
-      <SidebarSectionHeading text="Sink" />
+      <SidebarSectionHeading text={t('knative-plugin~Sink')} />
       {isSinkReference || sinkUri ? (
         <ul className="list-group">
           <li className="list-group-item">
@@ -58,7 +55,7 @@ const EventSinkServicesOverviewList: React.FC<EventSinkServicesOverviewListProps
             )}
             {sinkUri && (
               <>
-                <span className="text-muted">Sink URI: </span>
+                <span className="text-muted">{t('knative-plugin~Sink URI:')} </span>
                 <ExternalLink
                   href={sinkUri}
                   additionalClassName="co-external-link--block"
@@ -69,9 +66,9 @@ const EventSinkServicesOverviewList: React.FC<EventSinkServicesOverviewListProps
           </li>
         </ul>
       ) : (
-        <span className="text-muted">No sink found for this resource.</span>
+        <span className="text-muted">{t('knative-plugin~No sink found for this resource.')}</span>
       )}
-      {pods?.length > 0 && <PodsOverview pods={pods} obj={obj} allPodsLink={linkUrl} />}
+      {podData?.pods?.length > 0 && <PodsOverview obj={obj} allPodsLink={linkUrl} />}
       {deploymentData?.name && (
         <>
           <SidebarSectionHeading text="Deployment" />

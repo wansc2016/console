@@ -28,16 +28,18 @@ export const titleResolver: RenderableFieldResolver = {
   [VMSettingsField.NAME]: 'Name',
   [VMSettingsField.DESCRIPTION]: 'Description',
   [VMSettingsField.OPERATING_SYSTEM]: 'Operating System',
-  [VMSettingsField.CLONE_COMMON_BASE_DISK_IMAGE]: 'Clone available operating system source',
+  [VMSettingsField.CLONE_COMMON_BASE_DISK_IMAGE]:
+    'Clone available operating system source to this Virtual Machine',
   [VMSettingsField.MOUNT_WINDOWS_GUEST_TOOLS]: 'Mount Windows guest tools',
   [VMSettingsField.FLAVOR]: 'Flavor',
   [VMSettingsField.MEMORY]: 'Memory',
   [VMSettingsField.CPU]: 'CPUs',
-  [VMSettingsField.WORKLOAD_PROFILE]: 'Workload Profile',
+  [VMSettingsField.WORKLOAD_PROFILE]: 'Workload Type',
   [VMSettingsField.PROVISION_SOURCE_TYPE]: 'Boot Source',
   [VMSettingsField.CONTAINER_IMAGE]: 'Container Image',
   [VMSettingsField.IMAGE_URL]: 'URL',
   [VMSettingsField.START_VM]: 'Start virtual machine on creation',
+  [VMSettingsField.TEMPLATE_PROVIDER]: 'Template provider',
 };
 
 export const placeholderResolver = {
@@ -49,7 +51,7 @@ export const placeholderResolver = {
   [VMWareProviderField.VM]: '--- Select VM or Template ---',
   [VMSettingsField.OPERATING_SYSTEM]: '--- Select Operating System ---',
   [VMSettingsField.FLAVOR]: '--- Select Flavor ---',
-  [VMSettingsField.WORKLOAD_PROFILE]: '--- Select Workload Profile ---',
+  [VMSettingsField.WORKLOAD_PROFILE]: '--- Select Workload Type ---',
   [VMSettingsField.PROVISION_SOURCE_TYPE]: '--- Select Source ---',
 };
 
@@ -83,4 +85,5 @@ export const helpResolver = {
     'The category of workload that this virtual machine will be used for.',
   [VMSettingsField.PROVISION_SOURCE_TYPE]: () =>
     'Select a method of adding an operating system image source',
+  [VMSettingsField.TEMPLATE_PROVIDER]: () => 'Clarifies who created this template on the cluster',
 };

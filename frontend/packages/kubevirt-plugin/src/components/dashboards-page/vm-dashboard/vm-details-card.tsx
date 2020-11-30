@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DashboardItemProps } from '@console/internal/components/dashboard/with-dashboard-resources';
 import DashboardCard from '@console/shared/src/components/dashboard/dashboard-card/DashboardCard';
 import DashboardCardBody from '@console/shared/src/components/dashboard/dashboard-card/DashboardCardBody';
@@ -30,6 +31,7 @@ import {
 } from '../../../utils/guest-agent-strings';
 
 export const VMDetailsCard: React.FC<VMDetailsCardProps> = () => {
+  const { t } = useTranslation();
   const vmDashboardContext = React.useContext(VMDashboardContext);
   const { vm, vmi, pods, vmStatusBundle } = vmDashboardContext;
   const vmiLike = vm || vmi;
@@ -38,6 +40,7 @@ export const VMDetailsCard: React.FC<VMDetailsCardProps> = () => {
   const [guestAgentInfoRaw] = useGuestAgentInfo({ vmi });
   const guestAgentInfo = new GuestAgentInfoWrapper(guestAgentInfoRaw);
   const guestAgentFieldNotAvailMsg = getGuestAgentFieldNotAvailMsg(
+    t,
     isGuestAgentInstalled(vmi),
     status,
   );
@@ -62,25 +65,25 @@ export const VMDetailsCard: React.FC<VMDetailsCardProps> = () => {
   const operatingSystem = guestAgentInfo.getOSInfo().getPrettyName();
   const timeZone = guestAgentInfo.getTimezoneName();
   const numLoggedInUsers: number | null = guestAgentInfo.getNumLoggedInUsers();
-  const numLoggedInUsersMsg: string = getNumLoggedInUsersMessage(numLoggedInUsers);
+  const numLoggedInUsersMsg: string = getNumLoggedInUsersMessage(t, numLoggedInUsers);
 
   return (
     <DashboardCard>
       <DashboardCardHeader>
-        <DashboardCardTitle>Details</DashboardCardTitle>
+        <DashboardCardTitle>{t('kubevirt-plugin~Details')}</DashboardCardTitle>
         <DashboardCardLink to={viewAllLink}>View all</DashboardCardLink>
       </DashboardCardHeader>
       <DashboardCardBody isLoading={false}>
         <DetailsBody>
           <DetailItem
-            title="Name"
+            title={t('kubevirt-plugin~Name')}
             error={false}
             isLoading={!vmiLike}
             valueClassName="co-select-to-copy"
           >
             {name}
           </DetailItem>
-          <DetailItem title="Namespace" error={false} isLoading={!vmiLike}>
+          <DetailItem title={t('kubevirt-plugin~Namespace')} error={false} isLoading={!vmiLike}>
             <ResourceLink
               kind="Namespace"
               name={namespace}
@@ -88,22 +91,26 @@ export const VMDetailsCard: React.FC<VMDetailsCardProps> = () => {
               namespace={null}
             />
           </DetailItem>
-          <DetailItem title="Created" error={false} isLoading={!vmiLike}>
+          <DetailItem title={t('kubevirt-plugin~Created')} error={false} isLoading={!vmiLike}>
             <Timestamp timestamp={getCreationTimestamp(vmiLike)} />
           </DetailItem>
           <DetailItem
-            title="Hostname"
+            title={t('kubevirt-plugin~Hostname')}
             error={!hostname}
             isLoading={!vmiLike}
             errorMessage={guestAgentFieldNotAvailMsg}
           >
             {hostname}
           </DetailItem>
-          <DetailItem title="Node" error={!launcherPod || !nodeName} isLoading={!vmiLike}>
+          <DetailItem
+            title={t('kubevirt-plugin~Node')}
+            error={!launcherPod || !nodeName}
+            isLoading={!vmiLike}
+          >
             {launcherPod && nodeName && <NodeLink name={nodeName} />}
           </DetailItem>
           <DetailItem
-            title="IP Address"
+            title={t('kubevirt-plugin~IP Address')}
             error={!launcherPod || !ipAddrs}
             isLoading={!vmiLike}
             valueClassName="co-select-to-copy"
@@ -111,7 +118,7 @@ export const VMDetailsCard: React.FC<VMDetailsCardProps> = () => {
             {launcherPod && ipAddrs}
           </DetailItem>
           <DetailItem
-            title="Operating System"
+            title={t('kubevirt-plugin~Operating System')}
             error={!(operatingSystem || os)}
             isLoading={!vmiLike}
             errorMessage={guestAgentFieldNotAvailMsg}
@@ -119,7 +126,7 @@ export const VMDetailsCard: React.FC<VMDetailsCardProps> = () => {
             {operatingSystem || os}
           </DetailItem>
           <DetailItem
-            title="Time Zone"
+            title={t('kubevirt-plugin~Time Zone')}
             error={!timeZone}
             isLoading={!vmiLike}
             errorMessage={guestAgentFieldNotAvailMsg}
@@ -127,7 +134,7 @@ export const VMDetailsCard: React.FC<VMDetailsCardProps> = () => {
             {timeZone}
           </DetailItem>
           <DetailItem
-            title="Active Users"
+            title={t('kubevirt-plugin~Active Users')}
             error={numLoggedInUsers == null}
             isLoading={!vmiLike}
             errorMessage={guestAgentFieldNotAvailMsg}

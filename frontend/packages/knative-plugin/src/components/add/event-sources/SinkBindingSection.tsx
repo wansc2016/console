@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 import { useFormikContext, FormikValues } from 'formik';
+import { useTranslation } from 'react-i18next';
 import { TextInputTypes, FormGroup } from '@patternfly/react-core';
 import { InputField, getFieldId } from '@console/shared';
 import { AsyncComponent } from '@console/internal/components/utils/async';
@@ -9,11 +10,14 @@ import { EventSources } from '../import-types';
 
 interface SinkBindingSectionProps {
   title: string;
+  fullWidth?: boolean;
 }
 
-const SinkBindingSection: React.FC<SinkBindingSectionProps> = ({ title }) => {
+const SinkBindingSection: React.FC<SinkBindingSectionProps> = ({ title, fullWidth }) => {
+  const { t } = useTranslation();
   const { values, setFieldValue } = useFormikContext<FormikValues>();
-  const initVal = values?.data?.[EventSources.SinkBinding]?.subject?.selector?.matchLabels || {};
+  const initVal =
+    values?.formData?.data?.[EventSources.SinkBinding]?.subject?.selector?.matchLabels || {};
   const initialValueResources = !_.isEmpty(initVal)
     ? _.map(initVal, (key, val) => [val, key])
     : [['', '']];
@@ -30,7 +34,7 @@ const SinkBindingSection: React.FC<SinkBindingSectionProps> = ({ title }) => {
       });
       setNameValue(nameValuePairs);
       setFieldValue(
-        `data.${EventSources.SinkBinding}.subject.selector.matchLabels`,
+        `formData.data.${EventSources.SinkBinding}.subject.selector.matchLabels`,
         updatedNameValuePairs,
       );
     },
@@ -38,23 +42,23 @@ const SinkBindingSection: React.FC<SinkBindingSectionProps> = ({ title }) => {
   );
   const fieldId = getFieldId(values.type, 'subject-matchLabels');
   return (
-    <FormSection title={title} extraMargin>
-      <h3 className="co-section-heading-tertiary">Subject</h3>
+    <FormSection title={title} extraMargin fullWidth={fullWidth}>
+      <h3 className="co-section-heading-tertiary">{t('knative-plugin~Subject')}</h3>
       <InputField
         data-test-id="sinkbinding-apiversion-field"
         type={TextInputTypes.text}
-        name={`data.${EventSources.SinkBinding}.subject.apiVersion`}
-        label="apiVersion"
+        name={`formData.data.${EventSources.SinkBinding}.subject.apiVersion`}
+        label={t('knative-plugin~apiVersion')}
         required
       />
       <InputField
         data-test-id="sinkbinding-kind-field"
         type={TextInputTypes.text}
-        name={`data.${EventSources.SinkBinding}.subject.kind`}
-        label="Kind"
+        name={`formData.data.${EventSources.SinkBinding}.subject.kind`}
+        label={t('knative-plugin~Kind')}
         required
       />
-      <FormGroup fieldId={fieldId} label="Match Labels">
+      <FormGroup fieldId={fieldId} label={t('knative-plugin~Match Labels')}>
         <AsyncComponent
           loader={() =>
             import('@console/internal/components/utils/name-value-editor').then(
@@ -62,9 +66,9 @@ const SinkBindingSection: React.FC<SinkBindingSectionProps> = ({ title }) => {
             )
           }
           nameValuePairs={nameValue}
-          valueString="Value"
-          nameString="Name"
-          addLabel="Add Values"
+          valueString={t('knative-plugin~Value')}
+          nameString={t('knative-plugin~Name')}
+          addLabel={t('knative-plugin~Add Values')}
           readOnly={false}
           allowSorting={false}
           updateParentData={handleNameValuePairs}

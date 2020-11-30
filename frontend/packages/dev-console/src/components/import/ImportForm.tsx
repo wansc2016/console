@@ -1,15 +1,20 @@
 import * as React from 'react';
 import { Formik, FormikProps } from 'formik';
 import * as _ from 'lodash';
+import { useTranslation } from 'react-i18next';
 import { history, AsyncComponent } from '@console/internal/components/utils';
 import { getActivePerspective, getActiveApplication } from '@console/internal/reducers/ui';
 import { RootState } from '@console/internal/redux';
 import { connect } from 'react-redux';
-import { ALL_APPLICATIONS_KEY } from '@console/shared';
+import { ALL_APPLICATIONS_KEY, usePostFormSubmitAction } from '@console/shared';
 import { useExtensions, Perspective, isPerspective } from '@console/plugin-sdk';
+import {
+  UNASSIGNED_KEY,
+  UNASSIGNED_LABEL,
+  ALLOW_SERVICE_BINDING_FLAG,
+} from '@console/topology/src/const';
+import { sanitizeApplicationValue } from '@console/topology/src/utils/application-utils';
 import { NormalizedBuilderImages, normalizeBuilderImages } from '../../utils/imagestream-utils';
-import { doContextualBinding, sanitizeApplicationValue } from '../../utils/application-utils';
-import { ALLOW_SERVICE_BINDING, UNASSIGNED_KEY, UNASSIGNED_LABEL } from '../../const';
 import { GitImportFormData, FirehoseList, ImportData, Resources } from './import-types';
 import { createOrUpdateResources, handleRedirect } from './import-submit-utils';
 import { validationSchema } from './import-validation-utils';
@@ -40,9 +45,10 @@ const ImportForm: React.FC<ImportFormProps & StateProps> = ({
   perspective,
   activeApplication,
   projects,
-  serviceBindingAvailable,
 }) => {
+  const { t } = useTranslation();
   const perspectiveExtensions = useExtensions<Perspective>(isPerspective);
+  const postFormCallback = usePostFormSubmitAction();
   const initialValues: GitImportFormData = {
     name: '',
     project: {
@@ -163,13 +169,11 @@ const ImportForm: React.FC<ImportFormProps & StateProps> = ({
       true,
     ).then(() => createOrUpdateResources(values, imageStream));
 
-    if (contextualSource) {
-      resourceActions
-        .then((resources) =>
-          doContextualBinding(resources, contextualSource, serviceBindingAvailable),
-        )
-        .catch(() => {});
-    }
+    resourceActions
+      .then((resources) => {
+        postFormCallback(resources);
+      })
+      .catch(() => {});
 
     return resourceActions
       .then(() => {
@@ -196,7 +200,7 @@ const ImportForm: React.FC<ImportFormProps & StateProps> = ({
       initialValues={initialValues}
       onSubmit={handleSubmit}
       onReset={history.goBack}
-      validationSchema={validationSchema}
+      validationSchema={validationSchema(t)}
     >
       {renderForm}
     </Formik>
@@ -210,7 +214,7 @@ const mapStateToProps = (state: RootState, ownProps: OwnProps): StateProps => {
   return {
     perspective,
     activeApplication: activeApplication !== ALL_APPLICATIONS_KEY ? activeApplication : '',
-    serviceBindingAvailable: state.FLAGS.get(ALLOW_SERVICE_BINDING),
+    serviceBindingAvailable: state.FLAGS.get(ALLOW_SERVICE_BINDING_FLAG),
   };
 };
 

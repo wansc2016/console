@@ -1,0 +1,12 @@
+.odc-pipeline-builder-form {
+  overflow: auto;
+
+  &__grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 30px;
+  }
+
+  &__short-section {
+    max-width: 400px;
+  }
+}

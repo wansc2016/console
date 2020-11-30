@@ -2,10 +2,13 @@ import * as React from 'react';
 import { Formik, FormikProps } from 'formik';
 import * as _ from 'lodash';
 import { connect } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { getActivePerspective } from '@console/internal/reducers/ui';
 import { RootState } from '@console/internal/redux';
 import { history } from '@console/internal/components/utils';
 import { useExtensions, Perspective, isPerspective } from '@console/plugin-sdk';
+import { k8sGet, K8sResourceKind } from '@console/internal/module/k8s';
+import { ImageStreamModel } from '@console/internal/models';
 import { NormalizedBuilderImages, normalizeBuilderImages } from '../../utils/imagestream-utils';
 import {
   createOrUpdateResources as createOrUpdateGitResources,
@@ -16,7 +19,7 @@ import { createOrUpdateDeployImageResources } from '../import/deployImage-submit
 import { deployValidationSchema } from '../import/deployImage-validation-utils';
 import EditApplicationForm from './EditApplicationForm';
 import { EditApplicationProps } from './edit-application-types';
-import { getPageHeading, getInitialValues } from './edit-application-utils';
+import { getPageHeading, getInitialValues, CreateApplicationFlow } from './edit-application-utils';
 
 export interface StateProps {
   perspective: string;
@@ -28,17 +31,16 @@ const EditApplication: React.FC<EditApplicationProps & StateProps> = ({
   appName,
   resources: appResources,
 }) => {
+  const { t } = useTranslation();
   const perspectiveExtensions = useExtensions<Perspective>(isPerspective);
+  const initialValues = getInitialValues(appResources, appName, namespace);
+  const pageHeading = getPageHeading(_.get(initialValues, 'build.strategy', ''));
   const imageStreamsData =
     appResources.imageStreams && appResources.imageStreams.loaded
       ? appResources.imageStreams.data
       : [];
-  const builderImages: NormalizedBuilderImages = !_.isEmpty(imageStreamsData)
-    ? normalizeBuilderImages(imageStreamsData)
-    : null;
 
-  const initialValues = getInitialValues(appResources, appName, namespace);
-  const pageHeading = getPageHeading(_.get(initialValues, 'build.strategy', ''));
+  const [builderImages, setBuilderImages] = React.useState<NormalizedBuilderImages>(null);
 
   const updateResources = (values) => {
     if (values.build.strategy) {
@@ -72,13 +74,50 @@ const EditApplication: React.FC<EditApplicationProps & StateProps> = ({
     );
   };
 
+  React.useEffect(() => {
+    let ignore = false;
+
+    const getBuilderImages = async () => {
+      let allBuilderImages: NormalizedBuilderImages = !_.isEmpty(imageStreamsData)
+        ? normalizeBuilderImages(imageStreamsData)
+        : {};
+      const {
+        name: imageName,
+        namespace: imageNs,
+      } = appResources.buildConfig.data.spec?.strategy.sourceStrategy.from;
+      const selectedImage = imageName?.split(':')[0];
+      const builderImageExists = imageNs === 'openshift' && allBuilderImages?.[selectedImage];
+      if (!builderImageExists) {
+        let newImageStream: K8sResourceKind;
+        try {
+          newImageStream = await k8sGet(ImageStreamModel, selectedImage, imageNs);
+          // eslint-disable-next-line no-empty
+        } catch {}
+        if (ignore) return;
+        allBuilderImages = {
+          ...allBuilderImages,
+          ...(newImageStream ? normalizeBuilderImages(newImageStream) : {}),
+        };
+      }
+      setBuilderImages(!_.isEmpty(allBuilderImages) ? allBuilderImages : null);
+    };
+
+    if (pageHeading === CreateApplicationFlow.Git) {
+      getBuilderImages();
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [appResources.buildConfig.data.spec, imageStreamsData, pageHeading]);
+
   return (
     <Formik
       initialValues={initialValues}
       onSubmit={handleSubmit}
       onReset={history.goBack}
       validationSchema={
-        _.get(initialValues, 'build.strategy') ? gitValidationSchema : deployValidationSchema
+        _.get(initialValues, 'build.strategy') ? gitValidationSchema(t) : deployValidationSchema(t)
       }
     >
       {renderForm}

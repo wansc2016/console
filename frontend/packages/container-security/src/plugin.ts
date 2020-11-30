@@ -13,11 +13,11 @@ import {
   HorizontalNavTab,
 } from '@console/plugin-sdk';
 import { ClusterServiceVersionModel } from '@console/operator-lifecycle-manager';
+import { NamespaceModel, PodModel, ProjectModel } from '@console/internal/models';
 import { ImageManifestVulnModel } from './models';
 import { ContainerSecurityFlag } from './const';
 import { securityHealthHandler } from './components/summary';
 import { WatchImageVuln } from './types';
-import { PodModel } from '@console/internal/models';
 
 type ConsumedExtensions =
   | ModelDefinition
@@ -118,9 +118,10 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/ResourceNS',
     properties: {
+      id: 'imagevulnerabilities',
       perspective: 'admin',
-      section: 'Administration',
-      mergeBefore: 'Custom Resource Definitions',
+      section: 'administration',
+      insertBefore: 'customresourcedefinitions',
       componentProps: {
         name: 'Image Vulnerabilities',
         resource: referenceForModel(ImageManifestVulnModel),
@@ -143,6 +144,40 @@ const plugin: Plugin<ConsumedExtensions> = [
         import(
           './components/image-manifest-vuln' /* webpackChunkName: "container-security" */
         ).then((m) => m.ImageManifestVulnPodTab),
+    },
+    flags: {
+      required: [ContainerSecurityFlag],
+    },
+  },
+  {
+    type: 'HorizontalNavTab',
+    properties: {
+      model: ProjectModel,
+      page: {
+        name: 'Vulnerabilities',
+        href: 'vulnerabilities',
+      },
+      loader: () =>
+        import(
+          './components/image-manifest-vuln' /* webpackChunkName: "project-image-vuln-list" */
+        ).then((m) => m.ProjectImageManifestVulnListPage),
+    },
+    flags: {
+      required: [ContainerSecurityFlag],
+    },
+  },
+  {
+    type: 'HorizontalNavTab',
+    properties: {
+      model: NamespaceModel,
+      page: {
+        name: 'Vulnerabilities',
+        href: 'vulnerabilities',
+      },
+      loader: () =>
+        import(
+          './components/image-manifest-vuln' /* webpackChunkName: "project-image-vuln-list" */
+        ).then((m) => m.ProjectImageManifestVulnListPage),
     },
     flags: {
       required: [ContainerSecurityFlag],

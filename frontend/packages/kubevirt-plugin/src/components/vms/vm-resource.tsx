@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ResourceSummary, NodeLink, ResourceLink } from '@console/internal/components/utils';
 import { K8sKind, PodKind, TemplateKind } from '@console/internal/module/k8s';
 import { getName, getNamespace, getNodeName } from '@console/shared';
@@ -11,6 +12,7 @@ import { descriptionModal, vmFlavorModal } from '../modals';
 import { BootOrderModal } from '../modals/boot-order-modal/boot-order-modal';
 import dedicatedResourcesModal from '../modals/scheduling-modals/dedicated-resources-modal/connected-dedicated-resources-modal';
 import nodeSelectorModal from '../modals/scheduling-modals/node-selector-modal/connected-node-selector-modal';
+import evictionStrategyModal from '../modals/scheduling-modals/eviction-strategy-modal/eviction-strategy-modal';
 import tolerationsModal from '../modals/scheduling-modals/tolerations-modal/connected-tolerations-modal';
 import affinityModal from '../modals/scheduling-modals/affinity-modal/connected-affinity-modal';
 import { getRowsDataFromAffinity } from '../modals/scheduling-modals/affinity-modal/helpers';
@@ -27,18 +29,9 @@ import { VirtualMachineInstanceModel, VirtualMachineModel } from '../../models';
 import { asVMILikeWrapper } from '../../k8s/wrapper/utils/convert';
 import { getVMTemplate } from '../../selectors/vm-template/selectors';
 import { getFlavorText } from '../../selectors/vm/flavor-text';
-import {
-  NODE_SELECTOR_MODAL_TITLE,
-  DEDICATED_RESOURCES_PINNED,
-  DEDICATED_RESOURCES_NOT_PINNED,
-  DEDICATED_RESOURCES_MODAL_TITLE,
-  TOLERATIONS_MODAL_TITLE,
-  AFFINITY_MODAL_TITLE,
-} from '../modals/scheduling-modals/shared/consts';
 import { useGuestAgentInfo } from '../../hooks/use-guest-agent-info';
 import { GuestAgentInfoWrapper } from '../../k8s/wrapper/vm/guest-agent-info/guest-agent-info-wrapper';
 import { VMStatusBundle } from '../../statuses/vm/types';
-import { NOT_AVAILABLE_MESSAGE } from '../../strings/vm/messages';
 import { isGuestAgentInstalled } from '../dashboards-page/vm-dashboard/vm-alerts';
 import { getGuestAgentFieldNotAvailMsg } from '../../utils/guest-agent-strings';
 import { Button } from '@patternfly/react-core';
@@ -54,11 +47,12 @@ export const VMDetailsItem: React.FC<VMDetailsItemProps> = ({
   onEditClick,
   idValue,
   isNotAvail = false,
-  isNotAvailMessage = NOT_AVAILABLE_MESSAGE,
+  isNotAvailMessage,
   valueClassName,
   arePendingChanges,
   children,
 }) => {
+  const { t } = useTranslation();
   return (
     <>
       <dt>
@@ -71,13 +65,19 @@ export const VMDetailsItem: React.FC<VMDetailsItemProps> = ({
               isInline
               onClick={onEditClick}
             >
-              View Pending Changes
+              {t('kubevirt-plugin~View Pending Changes')}
             </Button>
           )}
         </span>
       </dt>
       <dd id={idValue} className={valueClassName}>
-        {isNotAvail ? <span className="text-secondary">{isNotAvailMessage}</span> : children}
+        {isNotAvail ? (
+          <span className="text-secondary">
+            {isNotAvailMessage || t('kubevirt-plugin~Not available')}
+          </span>
+        ) : (
+          children
+        )}
       </dd>
     </>
   );
@@ -90,6 +90,8 @@ export const VMResourceSummary: React.FC<VMResourceSummaryProps> = ({
   templates,
   kindObj,
 }) => {
+  const { t } = useTranslation();
+
   const isVM = kindObj === VirtualMachineModel;
   const vmiLike = isVM ? vm : vmi;
 
@@ -105,11 +107,13 @@ export const VMResourceSummary: React.FC<VMResourceSummaryProps> = ({
   return (
     <ResourceSummary resource={vmiLike}>
       <VMDetailsItem
-        title="Description"
+        title={t('kubevirt-plugin~Description')}
         idValue={prefixedID(id, 'description')}
         valueClassName="kubevirt-vm-resource-summary__description"
       >
-        {!description && <span className="text-secondary">Not available</span>}
+        {!description && (
+          <span className="text-secondary">{t('kubevirt-plugin~Not available')}</span>
+        )}
         <EditButton
           canEdit={canUpdateVM}
           onClick={() => descriptionModal({ resource: vmiLike, kind: getVMLikeModel(vmiLike) })}
@@ -119,7 +123,7 @@ export const VMResourceSummary: React.FC<VMResourceSummaryProps> = ({
       </VMDetailsItem>
 
       <VMDetailsItem
-        title="Operating System"
+        title={t('kubevirt-plugin~Operating System')}
         idValue={prefixedID(id, 'os')}
         isNotAvail={!(operatingSystem || os)}
       >
@@ -127,7 +131,11 @@ export const VMResourceSummary: React.FC<VMResourceSummaryProps> = ({
       </VMDetailsItem>
 
       {isVM && (
-        <VMDetailsItem title="Template" idValue={prefixedID(id, 'template')} isNotAvail={!template}>
+        <VMDetailsItem
+          title={t('kubevirt-plugin~Template')}
+          idValue={prefixedID(id, 'template')}
+          isNotAvail={!template}
+        >
           {template && (
             <VMTemplateLink name={getName(template)} namespace={getNamespace(template)} />
           )}
@@ -145,6 +153,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
   canUpdateVM,
   kindObj,
 }) => {
+  const { t } = useTranslation();
   const [guestAgentInfoRaw] = useGuestAgentInfo({ vmi });
   const guestAgentInfo = new GuestAgentInfoWrapper(guestAgentInfoRaw);
   const hostname = guestAgentInfo.getHostname();
@@ -155,6 +164,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
   const vmiLikeWrapper = asVMILikeWrapper(vmiLike);
   const { status } = vmStatusBundle;
   const guestAgentFieldNotAvailMsg = getGuestAgentFieldNotAvailMsg(
+    t,
     isGuestAgentInstalled(vmi),
     status,
   );
@@ -171,7 +181,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
   return (
     <dl className="co-m-pane__details">
       <VMDetailsItem
-        title="Status"
+        title={t('kubevirt-plugin~Status')}
         canEdit={isVMIPaused(vmi)}
         editButtonId={prefixedID(id, 'status-edit')}
         onEditClick={() => vmStatusModal({ vmi })}
@@ -180,7 +190,11 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
         <VMStatus vm={vm} vmi={vmi} vmStatusBundle={vmStatusBundle} />
       </VMDetailsItem>
 
-      <VMDetailsItem title="Pod" idValue={prefixedID(id, 'pod')} isNotAvail={!launcherPod}>
+      <VMDetailsItem
+        title={t('kubevirt-plugin~Pod')}
+        idValue={prefixedID(id, 'pod')}
+        isNotAvail={!launcherPod}
+      >
         {launcherPod && (
           <ResourceLink
             kind={PodModel.kind}
@@ -191,7 +205,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
       </VMDetailsItem>
 
       <VMDetailsItem
-        title="Boot Order"
+        title={t('kubevirt-plugin~Boot Order')}
         canEdit={canEditWhileVMRunning}
         editButtonId={prefixedID(id, 'boot-order-edit')}
         onEditClick={() => BootOrderModal({ vmLikeEntity: vm, modalClassName: 'modal-lg' })}
@@ -206,7 +220,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
       </VMDetailsItem>
 
       <VMDetailsItem
-        title="IP Address"
+        title={t('kubevirt-plugin~IP Address')}
         idValue={prefixedID(id, 'ip-addresses')}
         isNotAvail={!launcherPod || !ipAddrs}
       >
@@ -214,7 +228,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
       </VMDetailsItem>
 
       <VMDetailsItem
-        title="Hostname"
+        title={t('kubevirt-plugin~Hostname')}
         idValue={prefixedID(id, 'hostname')}
         isNotAvail={!hostname}
         isNotAvailMessage={guestAgentFieldNotAvailMsg}
@@ -223,7 +237,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
       </VMDetailsItem>
 
       <VMDetailsItem
-        title="Time Zone"
+        title={t('kubevirt-plugin~Time Zone')}
         idValue={prefixedID(id, 'timezone')}
         isNotAvail={!timeZone}
         isNotAvailMessage={guestAgentFieldNotAvailMsg}
@@ -232,7 +246,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
       </VMDetailsItem>
 
       <VMDetailsItem
-        title="Node"
+        title={t('kubevirt-plugin~Node')}
         idValue={prefixedID(id, 'node')}
         isNotAvail={!launcherPod || !nodeName}
       >
@@ -240,7 +254,7 @@ export const VMDetailsList: React.FC<VMResourceListProps> = ({
       </VMDetailsItem>
 
       <VMDetailsItem
-        title="Workload Profile"
+        title={t('kubevirt-plugin~Workload Profile')}
         idValue={prefixedID(id, 'workload-profile')}
         isNotAvail={!workloadProfile}
       >
@@ -256,6 +270,7 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
   canUpdateVM,
   kindObj,
 }) => {
+  const { t } = useTranslation();
   const isVM = kindObj === VirtualMachineModel;
   const vmiLike = isVM ? vm : vmi;
   const vmiLikeWrapper = asVMILikeWrapper(vmiLike);
@@ -274,6 +289,7 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
   });
   const isCPUPinned = vmiLikeWrapper?.isDedicatedCPUPlacement();
   const nodeSelector = vmiLikeWrapper?.getNodeSelector();
+  const evictionStrategy = vmiLikeWrapper?.getEvictionStrategy();
   const tolerationsWrapperCount = (vmiLikeWrapper?.getTolerations() || []).length;
   const affinityWrapperCount = getRowsDataFromAffinity(vmiLikeWrapper?.getAffinity())?.length;
 
@@ -283,7 +299,7 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
         <dl className="co-m-pane__details">
           <VMDetailsItem
             canEdit={canEdit}
-            title={NODE_SELECTOR_MODAL_TITLE}
+            title={t('kubevirt-plugin~Node Selector')}
             idValue={prefixedID(id, 'node-selector')}
             editButtonId={prefixedID(id, 'node-selector-edit')}
             onEditClick={() => nodeSelectorModal({ vmLikeEntity: vm, blocking: true })}
@@ -293,7 +309,7 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
 
           <VMDetailsItem
             canEdit={canEdit}
-            title={TOLERATIONS_MODAL_TITLE}
+            title={t('kubevirt-plugin~Tolerations')}
             idValue={prefixedID(id, 'tolerations')}
             editButtonId={prefixedID(id, 'tolerations-edit')}
             onEditClick={() =>
@@ -307,13 +323,13 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
             {tolerationsWrapperCount > 0 ? (
               `${tolerationsWrapperCount} Toleration rules`
             ) : (
-              <p className="text-muted">No Toleration rules</p>
+              <p className="text-muted">{t('kubevirt-plugin~No Toleration rules')}</p>
             )}
           </VMDetailsItem>
 
           <VMDetailsItem
             canEdit={canEdit}
-            title={AFFINITY_MODAL_TITLE}
+            title={t('kubevirt-plugin~Affinity Rules')}
             idValue={prefixedID(id, 'affinity')}
             editButtonId={prefixedID(id, 'affinity-edit')}
             onEditClick={() =>
@@ -323,7 +339,7 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
             {affinityWrapperCount > 0 ? (
               `${affinityWrapperCount} Affinity rules`
             ) : (
-              <p className="text-muted">No Affinity rules</p>
+              <p className="text-muted">{t('kubevirt-plugin~No Affinity rules')}</p>
             )}
           </VMDetailsItem>
         </dl>
@@ -332,7 +348,7 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
       <div className="col-sm-6">
         <dl className="co-m-pane__details">
           <VMDetailsItem
-            title="Flavor"
+            title={t('kubevirt-plugin~Flavor')}
             idValue={prefixedID(id, 'flavor')}
             canEdit={canEditWhileVMRunning}
             onEditClick={() => vmFlavorModal({ vmLike: vm, blocking: true })}
@@ -348,13 +364,29 @@ export const VMSchedulingList: React.FC<VMSchedulingListProps> = ({
           </VMDetailsItem>
 
           <VMDetailsItem
-            title={DEDICATED_RESOURCES_MODAL_TITLE}
+            title={t('kubevirt-plugin~Dedicated Resources')}
             idValue={prefixedID(id, 'dedicated-resources')}
             canEdit={canEdit}
             onEditClick={() => dedicatedResourcesModal({ vmLikeEntity: vm, blocking: true })}
             editButtonId={prefixedID(id, 'dedicated-resources-edit')}
           >
-            {isCPUPinned ? DEDICATED_RESOURCES_PINNED : DEDICATED_RESOURCES_NOT_PINNED}
+            {isCPUPinned
+              ? t('kubevirt-plugin~Workload scheduled with dedicated resources (guaranteed policy)')
+              : t('kubevirt-plugin~No Dedicated resources applied')}
+          </VMDetailsItem>
+
+          <VMDetailsItem
+            title={t('kubevirt-plugin~Eviction Strategy')}
+            idValue={prefixedID(id, 'eviction-strategy')}
+            canEdit={canEdit}
+            onEditClick={() =>
+              evictionStrategyModal({ vmLikeEntity: vm, evictionStrategy, blocking: true })
+            }
+            editButtonId={prefixedID(id, 'eviction-strategy-edit')}
+          >
+            {evictionStrategy || (
+              <p className="text-muted">{t('kubevirt-plugin~No Eviction Strategy')}</p>
+            )}
           </VMDetailsItem>
         </dl>
       </div>

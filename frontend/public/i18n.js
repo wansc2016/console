@@ -8,9 +8,9 @@ import Pseudo from 'i18next-pseudo';
 import 'moment/locale/zh-cn';
 import 'moment/locale/ja';
 import 'moment/locale/en-gb';
+import 'moment/locale/ko';
 import moment from 'moment';
 
-import { FALLBACK_LOCALE } from './i18next-parser.config';
 const params = new URLSearchParams(window.location.search);
 const pseudolocalizationEnabled = params.get('pseudolocalization') === 'true';
 
@@ -31,16 +31,19 @@ i18n
       backend: {
         loadPath: 'static/locales/{{lng}}/{{ns}}.json',
       },
-      fallbackLng: FALLBACK_LOCALE,
+      lng: localStorage.getItem('bridge/language'),
+      fallbackLng: 'en',
       load: 'all',
       debug: process.env.NODE_ENV === 'development',
       detection: { caches: [] },
+      contextSeparator: '~',
       ns: [
         'alert-manager-config',
         'alert-manager-receiver-forms',
         'alert-manager-yaml-editor',
         'alert-routing-modal',
         'badge',
+        'build',
         'build-config',
         'build-strategy',
         'basicauth-idp-form',
@@ -51,31 +54,62 @@ i18n
         'cluster-settings',
         'cluster-update-modal',
         'cluster-version',
+        'console-app',
+        'console-shared',
+        'container-security',
         'create-catalog-source',
         'custom-resource-definition',
         'dashboard',
         'details-page',
+        'devconsole',
+        'dropdown',
         'demo',
         'editor',
         'email-receiver-form',
+        'environment',
+        'filter-toolbar',
         'github-idp-form',
         'gitlab-idp-form',
+        'git-service',
         'global-config',
         'google-idp-form',
         'htpasswd-idp-form',
         'idp-cafile-input',
         'idp-name-input',
+        'image-stream',
+        'ingress',
+        'knative-plugin',
         'keystone-idp-form',
+        'kubevirt-plugin',
+        'language-preferences-modal',
         'ldap-idp-form',
         'limit-range',
         'logs',
+        'list-page',
         'masthead',
+        'machines',
+        'machine-autoscalers',
+        'machine-configs',
+        'machine-config-pools',
+        'machine-health-checks',
+        'machine-sets',
+        'metal3-plugin',
         'modal',
+        'monitoring',
+        'namespace',
         'nav',
+        'network-policy',
+        'network-route',
+        'network-service',
+        'nodes',
         'oauth',
         'openid-idp-form',
         'operator-hub-details',
+        'operator-hub-subscribe',
+        'operator-install-page',
+        'operator-lifecycle-manager',
         'pagerduty-receiver-form',
+        'pipelines-plugin',
         'public',
         'quickstart',
         'related-objects',
@@ -87,6 +121,8 @@ i18n
         'search',
         'sidebar',
         'slack-receiver-form',
+        'subscription',
+        'topology',
         'tour',
         'utils',
         'user',
@@ -94,12 +130,8 @@ i18n
         'service-account',
         'group',
         'webhook-receiver-form',
+        'workload',
         'yaml',
-        'editor',
-        'network-service',
-        'network-route',
-        'network-policy',
-        'ingress',
       ],
       defaultNS: 'public',
       nsSeparator: '~',
@@ -127,11 +159,9 @@ i18n
       },
       saveMissing: true,
       missingKeyHandler: function(lng, ns, key) {
-        window.windowError = new Error(
-          `Missing i18n key "${key}" in namespace "${ns}" and language "${lng}."`,
-        );
+        window.windowError = `Missing i18n key "${key}" in namespace "${ns}" and language "${lng}."`;
         // eslint-disable-next-line no-console
-        console.error(`Missing i18n key "${key}" in namespace "${ns}" and language "${lng}."`);
+        console.error(window.windowError);
       },
     },
     () => {

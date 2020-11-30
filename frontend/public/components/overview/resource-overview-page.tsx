@@ -1,5 +1,9 @@
 import * as React from 'react';
-
+import {
+  OverviewItem,
+  usePluginsOverviewTabSection,
+  useBuildConfigsWatcher,
+} from '@console/shared';
 import { connectToModel } from '../../kinds';
 import { referenceForModel } from '../../module/k8s';
 import { AsyncComponent, Kebab, ResourceOverviewHeading, ResourceSummary } from '../utils';
@@ -9,7 +13,6 @@ import { HPAOverview } from './hpa-overview';
 import { NetworkingOverview } from './networking-overview';
 import { PodsOverview } from './pods-overview';
 import { resourceOverviewPages } from './resource-overview-pages';
-import { OverviewItem, usePluginsOverviewTabSection } from '@console/shared';
 import { ManagedByOperatorLink } from '../utils/managed-by';
 
 const { common } = Kebab.factory;
@@ -17,19 +20,20 @@ const { common } = Kebab.factory;
 export const OverviewDetailsResourcesTab: React.SFC<OverviewDetailsResourcesTabProps> = ({
   item,
 }) => {
-  const { buildConfigs, hpas, routes, services, pods, obj } = item;
-  const hasBuildConfig = buildConfigs?.length > 0;
+  const { hpas, obj } = item;
   const pluginComponents = usePluginsOverviewTabSection(item);
+  const { buildConfigs } = useBuildConfigsWatcher(obj);
+  const hasBuildConfig = buildConfigs?.length > 0;
   return (
     <div className="overview__sidebar-pane-body">
       <ManagedByOperatorLink obj={item.obj} />
-      <PodsOverview pods={pods} obj={obj} hasBuildConfig={hasBuildConfig} />
+      <PodsOverview obj={obj} hasBuildConfig={hasBuildConfig} />
       <BuildOverview buildConfigs={buildConfigs} />
       <HPAOverview hpas={hpas} />
       {pluginComponents.map(({ Component, key }) => (
         <Component key={key} item={item} />
       ))}
-      <NetworkingOverview services={services} routes={routes} />
+      <NetworkingOverview obj={obj} />
     </div>
   );
 };

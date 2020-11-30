@@ -25,6 +25,7 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { ChartLineIcon } from '@patternfly/react-icons';
+import { useTranslation } from 'react-i18next';
 import { connect } from 'react-redux';
 import { VictoryPortal } from 'victory';
 import { withFallback } from '@console/shared/src/components/error/error-boundary';
@@ -86,6 +87,8 @@ const SpanControls: React.FC<SpanControlsProps> = React.memo(
     const [isValid, setIsValid] = React.useState(true);
     const [text, setText] = React.useState(formatPrometheusDuration(span));
 
+    const { t } = useTranslation();
+
     React.useEffect(() => {
       setText(formatPrometheusDuration(span));
     }, [span]);
@@ -127,7 +130,7 @@ const SpanControls: React.FC<SpanControlsProps> = React.memo(
           type="button"
           variant="tertiary"
         >
-          Reset Zoom
+          {t('monitoring~Reset zoom')}
         </Button>
       </>
     );
@@ -262,6 +265,9 @@ const LegendContainer = ({ children }: { children?: React.ReactNode }) => {
   );
 };
 
+const Null = () => null;
+const nullComponent = <Null />;
+
 type GraphSeries = GraphDataPoint[] | null;
 
 const Graph: React.FC<GraphProps> = React.memo(
@@ -337,7 +343,13 @@ const Graph: React.FC<GraphProps> = React.memo(
         width={width}
       >
         <ChartAxis style={xAxisStyle} tickCount={5} tickFormat={xTickFormat} />
-        <ChartAxis crossAxis={false} dependentAxis tickCount={6} tickFormat={yTickFormat} />
+        <ChartAxis
+          crossAxis={false}
+          dependentAxis
+          tickComponent={nullComponent}
+          tickCount={6}
+          tickFormat={yTickFormat}
+        />
         {isStack ? (
           <ChartStack>
             {data.map((values, i) => (
@@ -371,6 +383,7 @@ const Graph: React.FC<GraphProps> = React.memo(
           <ChartLegend
             data={legendData}
             groupComponent={<LegendContainer />}
+            gutter={30}
             itemsPerRow={4}
             orientation="vertical"
             style={{
@@ -565,7 +578,7 @@ const QueryBrowser_: React.FC<QueryBrowserProps> = ({
 
   const [containerRef, width] = useRefWidth();
 
-  const endTime = _.get(xDomain, '[1]');
+  const endTime = xDomain?.[1];
 
   const safeFetch = useSafeFetch();
 

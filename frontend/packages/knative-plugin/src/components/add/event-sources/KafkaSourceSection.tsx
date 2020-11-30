@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as _ from 'lodash';
+import { useTranslation } from 'react-i18next';
 import FormSection from '@console/dev-console/src/components/import/section/FormSection';
 import { InputField, SelectInputField, SelectInputOption } from '@console/shared';
 import { TextInputTypes } from '@patternfly/react-core';
@@ -12,9 +13,11 @@ import { EventSources } from '../import-types';
 
 interface KafkaSourceSectionProps {
   title: string;
+  fullWidth?: boolean;
 }
 
-const KafkaSourceSection: React.FC<KafkaSourceSectionProps> = ({ title }) => {
+const KafkaSourceSection: React.FC<KafkaSourceSectionProps> = ({ title, fullWidth }) => {
+  const { t } = useTranslation();
   const memoResources = React.useMemo(() => strimziResourcesWatcher(), []);
   const { kafkas, kafkatopics } = useK8sWatchResources<{
     [key: string]: K8sResourceKind[];
@@ -31,19 +34,26 @@ const KafkaSourceSection: React.FC<KafkaSourceSectionProps> = ({ title }) => {
           }))
         : [
             {
-              value: 'No Bootstrap Servers found',
+              value: t('knative-plugin~No Bootstrap Servers found'),
               disabled: true,
             },
           ];
-      placeholder = 'Add Bootstrap Servers';
+      placeholder = t('knative-plugin~Add Bootstrap Servers');
     } else if (kafkas.loadError) {
-      placeholder = `${kafkas.loadError?.message}. Try adding Bootstrap Servers manually.`;
+      placeholder = t(
+        'knative-plugin~{{loadErrorMessage}}. Try adding Bootstrap Servers manually.',
+        {
+          loadErrorMessage: kafkas.loadError?.message,
+        },
+      );
     } else {
-      bootstrapServersOptions = [{ value: 'Loading Bootstrap Servers...', disabled: true }];
+      bootstrapServersOptions = [
+        { value: t('knative-plugin~Loading Bootstrap Servers...'), disabled: true },
+      ];
       placeholder = '...';
     }
     return [bootstrapServersOptions, placeholder];
-  }, [kafkas.data, kafkas.loaded, kafkas.loadError]);
+  }, [kafkas.loaded, kafkas.loadError, kafkas.data, t]);
 
   const [kafkaTopics, ktPlaceholder] = React.useMemo(() => {
     let topicsOptions: SelectInputOption[] = [];
@@ -56,40 +66,42 @@ const KafkaSourceSection: React.FC<KafkaSourceSectionProps> = ({ title }) => {
           }))
         : [
             {
-              value: 'No Topics found',
+              value: t('knative-plugin~No Topics found'),
               disabled: true,
             },
           ];
-      placeholder = 'Add Topics';
+      placeholder = t('knative-plugin~Add Topics');
     } else if (kafkatopics.loadError) {
-      placeholder = `${kafkatopics.loadError?.message}. Try adding Topics manually.`;
+      placeholder = t('knative-plugin~{{kafkaTopicErrorMessage}}. Try adding Topics manually.', {
+        kafkaTopicErrorMessage: kafkatopics.loadError.message,
+      });
     } else {
-      topicsOptions = [{ value: 'Loading Topics...', disabled: true }];
+      topicsOptions = [{ value: t('knative-plugin~Loading Topics...'), disabled: true }];
       placeholder = '...';
     }
     return [topicsOptions, placeholder];
-  }, [kafkatopics.data, kafkatopics.loaded, kafkatopics.loadError]);
+  }, [kafkatopics.loaded, kafkatopics.loadError, kafkatopics.data, t]);
 
   return (
-    <FormSection title={title} extraMargin>
+    <FormSection title={title} extraMargin fullWidth={fullWidth}>
       <SelectInputField
         data-test-id="kafkasource-bootstrapservers-field"
-        name={`data.${EventSources.KafkaSource}.bootstrapServers`}
-        label="Bootstrap Servers"
+        name={`formData.data.${EventSources.KafkaSource}.bootstrapServers`}
+        label={t('knative-plugin~Bootstrap Servers')}
         options={bootstrapServers}
         placeholderText={bsPlaceholder}
-        helpText="The address of the Kafka broker"
+        helpText={t('knative-plugin~The address of the Kafka broker')}
         isCreatable
         hasOnCreateOption
         required
       />
       <SelectInputField
         data-test-id="kafkasource-topics-field"
-        name={`data.${EventSources.KafkaSource}.topics`}
-        label="Topics"
+        name={`formData.data.${EventSources.KafkaSource}.topics`}
+        label={t('knative-plugin~Topics')}
         options={kafkaTopics}
         placeholderText={ktPlaceholder}
-        helpText="Virtual groups across Kafka brokers"
+        helpText={t('knative-plugin~Virtual groups across Kafka brokers')}
         isCreatable
         hasOnCreateOption
         required
@@ -97,9 +109,9 @@ const KafkaSourceSection: React.FC<KafkaSourceSectionProps> = ({ title }) => {
       <InputField
         data-test-id="kafkasource-consumergroup-field"
         type={TextInputTypes.text}
-        name={`data.${EventSources.KafkaSource}.consumerGroup`}
-        label="Consumer Group"
-        helpText="A group that tracks maximum offset consumed"
+        name={`formData.data.${EventSources.KafkaSource}.consumerGroup`}
+        label={t('knative-plugin~Consumer Group')}
+        helpText={t('knative-plugin~A group that tracks maximum offset consumed')}
         required
       />
       <KafkaSourceNetSection />

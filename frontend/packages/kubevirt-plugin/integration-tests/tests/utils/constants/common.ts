@@ -1,6 +1,18 @@
 import { execSync } from 'child_process';
 
-export const { STORAGE_CLASS = 'standard', KUBEVIRT_PROJECT_NAME = 'openshift-cnv' } = process.env;
+export const {
+  STORAGE_CLASS = 'standard',
+  KUBEVIRT_PROJECT_NAME = 'openshift-cnv',
+  VOLUME_MODE,
+} = process.env;
+export const REMOTE_IMAGE =
+  'http://cnv-qe-server.rhevdev.lab.eng.rdu2.redhat.com/files/cnv-tests/cirros-images/cirros-0.4.0-x86_64-disk.qcow2';
+export const {
+  CIRROS_IMAGE = REMOTE_IMAGE,
+  FEDORA_IMAGE = REMOTE_IMAGE,
+  RHEL7_IMAGE = REMOTE_IMAGE,
+  WIN10_IMAGE = REMOTE_IMAGE,
+} = process.env;
 
 const rhelTinyCommonTemplateName = execSync(
   "kubectl get template -n openshift | grep rhel7-desktop-tiny | awk '{print $1}'",
@@ -24,6 +36,8 @@ export const VM_IMPORT_TIMEOUT_SECS = 160 * SEC;
 export const WINDOWS_IMPORT_TIMEOUT_SECS = 150 * SEC;
 export const VM_CREATE_AND_EDIT_TIMEOUT_SECS = 200 * SEC;
 export const VM_CREATE_AND_EDIT_AND_CLOUDINIT_TIMEOUT_SECS = 15 * 60 * SEC;
+export const VM_WITH_GA_CREATE_AND_EDIT_CLOUDINIT_TIMEOUT_SECS = 60 * 60 * SEC;
+export const GUEST_AGENT_FIELD_TIMEOUT_SECS = 30 * SEC;
 
 export const POD_CREATION_TIMEOUT_SECS = 40 * SEC;
 export const POD_TERMINATION_TIMEOUT_SECS = 30 * SEC;
@@ -44,13 +58,14 @@ export const VIRTUALIZATION_TITLE = 'Virtualization';
 export const IMPORT_WIZARD_CONN_TO_NEW_INSTANCE = 'Connect to New Instance';
 export const NOT_RECOMMENDED_BUS_TYPE_WARN = 'Not recommended bus type';
 // Some times we need to use existing VMWare instance, which name always starts from 'administrator'
-export const IMPORT_WIZARD_CONN_NAME_PREFIX = 'administrator';
+export const IMPORT_WIZARD_CONN_NAME_PREFIX = 'admin';
 export const RHV_PROVIDER = 'Red Hat Virtualization (RHV)';
 export const VMWARE_PROVIDER = 'VMware';
 
 // Web-UI Exceptions
 export const RHV_WIZARD_CREATE_SUCCESS = 'Started import of virtual machine';
-export const WIZARD_CREATE_SUCCESS = 'Successfully created virtual machine';
+export const WIZARD_CREATE_SUCCESS = 'Started import of virtual machine';
+// export const WIZARD_CREATE_SUCCESS = 'Successfully created virtual machine';
 
 // Framework Exception
 export const UNEXPECTED_ACTION_ERROR = 'Received unexpected action.';
@@ -73,6 +88,7 @@ export const DEFAULT_YAML_VM_NAME = 'vm-example';
 
 export const KUBEVIRT_SCRIPTS_PATH =
   './packages/kubevirt-plugin/integration-tests/tests/utils/scripts';
+export const EXPECT_LOGIN_SCRIPT_PATH = `${KUBEVIRT_SCRIPTS_PATH}/expect-login.sh`;
 export const KUBEVIRT_TEMPLATES_PATH =
   './packages/kubevirt-plugin/integration-tests/tests/utils/templates';
 

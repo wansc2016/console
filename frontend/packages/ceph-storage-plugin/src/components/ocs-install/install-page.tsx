@@ -14,7 +14,7 @@ import { OCS_SUPPORT_ANNOTATION, MODES } from '../../constants';
 import { CreateAttachedDevicesCluster } from './attached-devices/install';
 import './install-page.scss';
 
-const INDEP_MODE_SUPPORTED_PLATFORMS = ['Baremetal', 'None', 'VSphere'];
+const INDEP_MODE_SUPPORTED_PLATFORMS = ['Baremetal', 'None', 'VSphere', 'OpenStack', 'oVirt'];
 
 const InstallCluster: React.FC<InstallClusterProps> = ({ match }) => {
   const {
@@ -123,7 +123,7 @@ const InstallCluster: React.FC<InstallClusterProps> = ({ match }) => {
           onChange={handleModeChange}
         />
       </div>
-      {mode === MODES.INTERNAL && <CreateInternalCluster match={match} />}
+      {mode === MODES.INTERNAL && <CreateInternalCluster match={match} mode={mode} />}
       {mode === MODES.EXTERNAL && (
         <CreateExternalCluster
           match={match}
@@ -131,7 +131,9 @@ const InstallCluster: React.FC<InstallClusterProps> = ({ match }) => {
           downloadFile={downloadFile}
         />
       )}
-      {mode === MODES.ATTACHED_DEVICES && <CreateAttachedDevicesCluster match={match} />}
+      {mode === MODES.ATTACHED_DEVICES && (
+        <CreateAttachedDevicesCluster match={match} mode={mode} />
+      )}
     </>
   );
 };

@@ -12,6 +12,24 @@ import AppSection from '../app/AppSection';
 import AdvancedSection from '../advanced/AdvancedSection';
 import ResourceSection from '../section/ResourceSection';
 
+jest.mock('react-i18next', () => {
+  const reactI18next = require.requireActual('react-i18next');
+  return {
+    ...reactI18next,
+    useTranslation: () => ({ t: (key) => key }),
+    withTranslation: () => (Component) => {
+      Component.defaultProps = { ...Component.defaultProps, t: (s) => s };
+      return Component;
+    },
+  };
+});
+
+jest.mock('@console/shared/src/hooks/post-form-submit-action', () => {
+  return {
+    usePostFormSubmitAction: () => () => {},
+  };
+});
+
 describe('DeployImage Page Test', () => {
   type DeployImagePageProps = React.ComponentProps<typeof DeployImagePage>;
   let deployImagePageProps: DeployImagePageProps;
@@ -43,7 +61,7 @@ describe('DeployImage Page Test', () => {
   });
   it('should render correct page title', () => {
     expect(deployImagePageWrapper.find(PageHeading).exists()).toBe(true);
-    expect(deployImagePageWrapper.find(PageHeading).prop('title')).toBe('Deploy Image');
+    expect(deployImagePageWrapper.find(PageHeading).prop('title')).toBe('devconsole~Deploy Image');
   });
 });
 

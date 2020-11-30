@@ -10,8 +10,11 @@ import {
   RoutePage,
   DevCatalogModel,
   DashboardsOverviewHealthOperator,
+  CatalogItemProvider,
+  CatalogItemType,
 } from '@console/plugin-sdk';
 import { referenceForModel } from '@console/internal/module/k8s';
+import { getExecutableCodeRef } from '@console/dynamic-plugin-sdk/src/coderefs/coderef-utils';
 import { FLAGS } from '@console/shared/src/constants';
 import { normalizeClusterServiceVersions } from './dev-catalog';
 import * as models from './models';
@@ -20,6 +23,12 @@ import { getClusterServiceVersionsWithStatuses } from './components/dashboard/ut
 import { ClusterServiceVersionKind } from './types';
 
 import './style.scss';
+
+const catalogCSVProvider = getExecutableCodeRef(() =>
+  import('./utils/useClusterServiceVersions' /* webpackChunkName: "catalog-csv-provider" */).then(
+    (m) => m.default,
+  ),
+);
 
 type ConsumedExtensions =
   | ModelDefinition
@@ -30,6 +39,8 @@ type ConsumedExtensions =
   | ResourceDetailsPage
   | RoutePage
   | DevCatalogModel
+  | CatalogItemProvider
+  | CatalogItemType
   | DashboardsOverviewHealthOperator<ClusterServiceVersionKind>;
 
 const plugin: Plugin<ConsumedExtensions> = [
@@ -57,9 +68,43 @@ const plugin: Plugin<ConsumedExtensions> = [
     },
   },
   {
+    type: 'Catalog/ItemType',
+    properties: {
+      type: 'OperatorBackedService',
+      // t('operator-lifecycle-manager~Operator Backed')
+      title: '%operator-lifecycle-manager~Operator Backed%',
+      // t('operator-lifecycle-manager~Browse for a variety of managed services that are installed by cluster administrators. Cluster administrators can customize the content made available in the catalog.')
+      catalogDescription:
+        '%operator-lifecycle-manager~Browse for a variety of managed services that are installed by cluster administrators. Cluster administrators can customize the content made available in the catalog.%',
+      // t('operator-lifecycle-manager~**Operator backed** includes a variety of services managed by Kubernetes controllers.')
+      typeDescription:
+        '%operator-lifecycle-manager~**Operator backed** includes a variety of services managed by Kubernetes controllers.%',
+      groupings: [
+        {
+          label: 'Operators',
+          attribute: 'operatorName',
+        },
+      ],
+    },
+    flags: {
+      required: [Flags.OPERATOR_LIFECYCLE_MANAGER],
+    },
+  },
+  {
+    type: 'Catalog/ItemProvider',
+    properties: {
+      type: 'OperatorBackedService',
+      provider: catalogCSVProvider,
+    },
+    flags: {
+      required: [Flags.OPERATOR_LIFECYCLE_MANAGER],
+    },
+  },
+  {
     type: 'NavItem/Href',
     properties: {
-      section: 'Operators',
+      id: 'operatorhub',
+      section: 'operators',
       componentProps: {
         name: 'OperatorHub',
         href: '/operatorhub',
@@ -72,7 +117,8 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/ResourceNS',
     properties: {
-      section: 'Operators',
+      id: 'operators',
+      section: 'operators',
       componentProps: {
         name: 'Installed Operators',
         resource: referenceForModel(models.ClusterServiceVersionModel),
@@ -182,19 +228,6 @@ const plugin: Plugin<ConsumedExtensions> = [
             './components/catalog-source' /* webpackChunkName: "create-subscription-yaml" */
           )
         ).CreateSubscriptionYAML,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      exact: true,
-      path: `/k8s/ns/:ns/${models.ClusterServiceVersionModel.plural}/:appName/:plural/~new`,
-      loader: async () =>
-        (
-          await import(
-            './components/operand/create-operand' /* webpackChunkName: "create-operand" */
-          )
-        ).CreateOperandPage,
     },
   },
   {

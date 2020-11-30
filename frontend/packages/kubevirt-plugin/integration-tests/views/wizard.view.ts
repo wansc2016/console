@@ -16,6 +16,9 @@ export const modalCancelButton = $('.modal-content').element(by.buttonText('Canc
 // Errors
 export const footerError = $('div[aria-label="Danger Alert"]');
 export const footerErrorDescroption = footerError.$('.pf-c-alert__description');
+export const bootError = $('#image-source-type-dropdown-helper');
+export const errorHelper = $('.pf-c-form__helper-text.pf-m-error');
+export const vmNameHelper = $('#vm-name-helper');
 
 // Basic Settings tab
 export const templateSelect = $('#template-dropdown');
@@ -54,6 +57,8 @@ export const customCloudInitScriptTextArea = $('#cloudinit-custom-custom-script'
 export const cloudInitAddKeyButton = $('#cloudinit-ssh_authorized_keys-add');
 export const cloudInitHostname = $('#cloudinit-hostname');
 export const cloudInitSSHKey = (rowNumber) => $(`#cloudinit-ssh_authorized_keys-key-${rowNumber}`);
+export const cloudInitFirstOption = $('#cloud-init-edit-mode-first-option');
+export const cloudInitSecondOption = $('#cloud-init-edit-mode-second-option');
 
 // Review tab
 export const nameReviewValue = $('#wizard-review-name');
@@ -86,5 +91,6 @@ export const tableRowAttribute = async (name: string, columnIndex: number): Prom
 };
 export const dropDownItem = (text) =>
   element(by.cssContainingText('.pf-c-select__menu-item', text));
-export const dropDownItemTitle = (text) =>
+export const dropDownItemMain = (text) =>
   element(by.cssContainingText('.pf-c-select__menu-item-main', text));
+export const uploadLink = element(by.linkText('upload a new disk image'));

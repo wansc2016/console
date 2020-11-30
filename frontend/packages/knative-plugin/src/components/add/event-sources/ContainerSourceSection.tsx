@@ -7,8 +7,9 @@ import { AsyncComponent } from '@console/internal/components/utils';
 import FormSection from '@console/dev-console/src/components/import/section/FormSection';
 import { getSuggestedName } from '@console/dev-console/src/utils/imagestream-utils';
 import { EventSources } from '../import-types';
+import { useTranslation } from 'react-i18next';
 
-const templateSpec = `data.${EventSources.ContainerSource}.template.spec.containers[0]`;
+const templateSpec = `formData.data.${EventSources.ContainerSource}.template.spec.containers[0]`;
 const containerPaths = {
   Image: `${templateSpec}.image`,
   Name: `${templateSpec}.name`,
@@ -18,16 +19,20 @@ const containerPaths = {
 
 interface ContainerSourceSectionProps {
   title: string;
+  fullWidth?: boolean;
 }
 
-const ContainerSourceSection: React.FC<ContainerSourceSectionProps> = ({ title }) => {
+const ContainerSourceSection: React.FC<ContainerSourceSectionProps> = ({ title, fullWidth }) => {
+  const { t } = useTranslation();
   const { values, setFieldValue } = useFormikContext<FormikValues>();
   const {
-    data: {
-      [EventSources.ContainerSource]: {
-        template: {
-          spec: {
-            containers: [{ env: envs, args }],
+    formData: {
+      data: {
+        [EventSources.ContainerSource]: {
+          template: {
+            spec: {
+              containers: [{ env: envs, args }],
+            },
           },
         },
       },
@@ -46,14 +51,14 @@ const ContainerSourceSection: React.FC<ContainerSourceSectionProps> = ({ title }
     [setFieldValue],
   );
   return (
-    <FormSection title={title} extraMargin>
-      <h3 className="co-section-heading-tertiary">Container</h3>
+    <FormSection title={title} extraMargin fullWidth={fullWidth}>
+      <h3 className="co-section-heading-tertiary">{t('knative-plugin~Container')}</h3>
       <InputField
         data-test-id="container-image-field"
         type={TextInputTypes.text}
         name={containerPaths.Image}
-        label="Image"
-        helpText="The image to run inside of the container"
+        label={t('knative-plugin~Image')}
+        helpText={t('knative-plugin~The image to run inside of the container')}
         required
         onChange={(e) => {
           setFieldValue(containerPaths.Name, getSuggestedName(e.target.value));
@@ -63,22 +68,22 @@ const ContainerSourceSection: React.FC<ContainerSourceSectionProps> = ({ title }
         data-test-id="container-name-field"
         type={TextInputTypes.text}
         name={containerPaths.Name}
-        label="Name"
-        helpText="The name of the image"
+        label={t('knative-plugin~Name')}
+        helpText={t('knative-plugin~The name of the image')}
       />
       <TextColumnField
         data-test-id="container-arg-field"
         name={containerPaths.Args}
-        label="Arguments"
-        addLabel="Add args"
-        placeholder="argument"
-        helpText="Arguments passed to the container"
+        label={t('knative-plugin~Arguments')}
+        addLabel={t('knative-plugin~Add Args')}
+        placeholder={t('knative-plugin~argument')}
+        helpText={t('knative-plugin~Arguments passed to the container')}
         disableDeleteRow={args?.length === 1}
       />
       <FormGroup
         fieldId="containersource-env"
-        label="Environment variables"
-        helperText="The list of variables to set in the container"
+        label={t('knative-plugin~Environment variables')}
+        helperText={t('knative-plugin~The list of variables to set in the container')}
       >
         <AsyncComponent
           loader={() =>
@@ -88,11 +93,12 @@ const ContainerSourceSection: React.FC<ContainerSourceSectionProps> = ({ title }
           }
           data-test-id="container-env-field"
           nameValuePairs={nameValue}
-          valueString="Value"
-          nameString="Name"
+          valueString={t('knative-plugin~Value')}
+          nameString={t('knative-plugin~Name')}
           readOnly={false}
           allowSorting={false}
           updateParentData={handleNameValuePairs}
+          addLabel={t('knative-plugin~Add More')}
         />
       </FormGroup>
     </FormSection>

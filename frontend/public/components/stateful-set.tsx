@@ -1,7 +1,6 @@
 import * as React from 'react';
-
+import { useTranslation } from 'react-i18next';
 import PodRingSet from '@console/shared/src/components/pod/PodRingSet';
-import { PodRingController } from '@console/shared';
 import { AddHealthChecks, EditHealthChecks } from '@console/app/src/actions/modify-health-checks';
 import { K8sResourceKind } from '../module/k8s';
 import { ResourceEventStream } from './events';
@@ -17,7 +16,6 @@ import {
   ResourceSummary,
   SectionHeading,
   navFactory,
-  LoadingInline,
   PodsComponent,
 } from './utils';
 import { VolumesTable } from './volumes-table';
@@ -53,38 +51,29 @@ const StatefulSetTableHeader = () => {
 };
 StatefulSetTableHeader.displayName = 'StatefulSetTableHeader';
 
-const StatefulSetDetails: React.FC<StatefulSetDetailsProps> = ({ obj: ss }) => (
-  <>
-    <div className="co-m-pane__body">
-      <SectionHeading text="StatefulSet Details" />
-      <PodRingController
-        namespace={ss.metadata.namespace}
-        kind={ss.kind}
-        render={(d) => {
-          return d.loaded ? (
-            <PodRingSet
-              key={ss.metadata.uid}
-              podData={d.data[ss.metadata.uid]}
-              obj={ss}
-              resourceKind={StatefulSetModel}
-              path="/spec/replicas"
-            />
-          ) : (
-            <LoadingInline />
-          );
-        }}
-      />
-      <ResourceSummary resource={ss} showPodSelector showNodeSelector showTolerations />
-    </div>
-    <div className="co-m-pane__body">
-      <SectionHeading text="Containers" />
-      <ContainerTable containers={ss.spec.template.spec.containers} />
-    </div>
-    <div className="co-m-pane__body">
-      <VolumesTable resource={ss} heading="Volumes" />
-    </div>
-  </>
-);
+const StatefulSetDetails: React.FC<StatefulSetDetailsProps> = ({ obj: ss }) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="co-m-pane__body">
+        <SectionHeading text={t('workload~StatefulSet details')} />
+        <PodRingSet key={ss.metadata.uid} obj={ss} path="/spec/replicas" />
+        <div className="row">
+          <div className="col-md-6">
+            <ResourceSummary resource={ss} showPodSelector showNodeSelector showTolerations />
+          </div>
+        </div>
+      </div>
+      <div className="co-m-pane__body">
+        <SectionHeading text={t('workload~Containers')} />
+        <ContainerTable containers={ss.spec.template.spec.containers} />
+      </div>
+      <div className="co-m-pane__body">
+        <VolumesTable resource={ss} heading={t('workload~Volumes')} />
+      </div>
+    </>
+  );
+};
 
 const EnvironmentPage: React.FC<EnvironmentPageProps> = (props) => (
   <AsyncComponent
@@ -103,15 +92,18 @@ const EnvironmentTab: React.FC<EnvironmentTabProps> = (props) => (
   />
 );
 
-export const StatefulSetsList: React.FC = (props) => (
-  <Table
-    {...props}
-    aria-label="Stateful Sets"
-    Header={StatefulSetTableHeader}
-    Row={StatefulSetTableRow}
-    virtualize
-  />
-);
+export const StatefulSetsList: React.FC = (props) => {
+  const { t } = useTranslation();
+  return (
+    <Table
+      {...props}
+      aria-label={t('workload~StatefulSets')}
+      Header={StatefulSetTableHeader}
+      Row={StatefulSetTableRow}
+      virtualize
+    />
+  );
+};
 export const StatefulSetsPage: React.FC<StatefulSetsPageProps> = (props) => (
   <ListPage {...props} ListComponent={StatefulSetsList} kind={kind} canCreate={true} />
 );

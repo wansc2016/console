@@ -7,11 +7,11 @@ import * as ConsoleReporter from 'jasmine-console-reporter';
 import * as failFast from 'protractor-fail-fast';
 import { createWriteStream, writeFileSync } from 'fs';
 import { format } from 'util';
+import { resolvePluginPackages } from '@console/plugin-sdk/src/codegen/plugin-resolver';
 import {
-  resolvePluginPackages,
   reducePluginTestSuites,
   mergeTestSuites,
-} from '@console/plugin-sdk/src/codegen';
+} from '@console/plugin-sdk/src/codegen/plugin-integration-tests';
 
 const tap = !!process.env.TAP;
 
@@ -66,12 +66,6 @@ const testSuites = {
   crudBasic: suite(['tests/crud.scenario.ts']),
   monitoring: suite(['tests/monitoring.scenario.ts']),
   newApp: suite(['tests/overview/overview.scenario.ts', 'tests/deploy-image.scenario.ts']),
-  olmFull: suite([
-    '../packages/operator-lifecycle-manager/integration-tests/scenarios/descriptors.scenario.ts',
-    '../packages/operator-lifecycle-manager/integration-tests/scenarios/operator-hub.scenario.ts',
-    '../packages/operator-lifecycle-manager/integration-tests/scenarios/global-installmode.scenario.ts',
-    '../packages/operator-lifecycle-manager/integration-tests/scenarios/single-installmode.scenario.ts',
-  ]),
   performance: suite(['tests/performance.scenario.ts']),
   serviceCatalog: suite([
     'tests/service-catalog/service-catalog.scenario.ts',
@@ -122,7 +116,6 @@ const testSuites = {
     'tests/overview/overview.scenario.ts',
     'tests/secrets.scenario.ts',
     'tests/storage.scenario.ts',
-    'tests/olm/**/*.scenario.ts',
     'tests/service-catalog/**/*.scenario.ts',
     'tests/filter.scenario.ts',
     'tests/modal-annotations.scenario.ts',
@@ -242,7 +235,7 @@ export const config = {
   params: {
     // Set to 'true' to enable OpenShift resources in the crud scenario.
     // Use a string rather than boolean so it can be specified on the command line:
-    // $ yarn test-gui --params.openshift true
+    // $ yarn test-protractor --params.openshift true
     openshift: 'false',
     // Set to 'true' to enable Service Catalog resources in the crud scenario.
     servicecatalog: 'false',
@@ -270,7 +263,7 @@ function hasError() {
 export const checkErrors = async () =>
   await browser.executeScript(hasError).then((err) => {
     if (err) {
-      fail(`omg js error: ${err}`);
+      fail(err);
     }
   });
 

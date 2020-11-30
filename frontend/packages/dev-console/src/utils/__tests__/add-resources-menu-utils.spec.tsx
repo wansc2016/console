@@ -3,27 +3,24 @@ import * as React from 'react';
 import { GitAltIcon } from '@patternfly/react-icons';
 import { KebabOption } from '@console/internal/components/utils';
 import { referenceFor } from '@console/internal/module/k8s';
+import { MockResources } from '@console/shared/src/utils/__tests__/test-resource-data';
+import { UNASSIGNED_KEY } from '@console/topology/src/const';
+import {
+  getTopologyResourceObject,
+  WORKLOAD_TYPES,
+} from '@console/topology/src/utils/topology-utils';
+import { baseDataModelGetter } from '@console/topology/src/data-transforms/data-transformer';
+import { getWorkloadResources } from '@console/topology/src/data-transforms/transform-utils';
+import { TopologyDataResources } from '@console/topology/src/topology-types';
 import {
   getMenuPath,
   getAddPageUrl,
   createKebabAction,
   KebabAction,
 } from '../add-resources-menu-utils';
-import {
-  getTopologyResourceObject,
-  WORKLOAD_TYPES,
-} from '../../components/topology/topology-utils';
-import { UNASSIGNED_KEY } from '../../const';
+import { INCONTEXT_ACTIONS_CONNECTS_TO } from '../../const';
 import { ImportOptions } from '../../components/import/import-types';
-import {
-  MockResources,
-  TEST_KINDS_MAP,
-} from '../../components/topology/__tests__/topology-test-data';
-import { TopologyDataResources } from '../../components/topology/topology-types';
-import {
-  baseDataModelGetter,
-  getWorkloadResources,
-} from '../../components/topology/data-transforms';
+import { TEST_KINDS_MAP } from '../../../../topology/src/__tests__/topology-test-data';
 
 const getTopologyData = (mockData: TopologyDataResources, name: string) => {
   const model = { nodes: [], edges: [] };
@@ -53,7 +50,12 @@ describe('addResourceMenuUtils: ', () => {
     expect(url.pathname).toBe('/import/ns/testproject1');
     expect(url.searchParams.get('importType')).toBe('git');
     expect(url.searchParams.get('application')).toBe('application-1');
-    expect(url.searchParams.get('contextSource')).toBe('apps~v1~DeploymentConfig/nodejs');
+    expect(url.searchParams.get('action')).toBe(
+      JSON.stringify({
+        type: INCONTEXT_ACTIONS_CONNECTS_TO,
+        payload: 'apps~v1~DeploymentConfig/nodejs',
+      }),
+    );
     expect(Array.from(url.searchParams.entries())).toHaveLength(3);
   });
 

@@ -1,5 +1,7 @@
 import * as React from 'react';
 import * as classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 import { sortable } from '@patternfly/react-table';
 import { fromNow } from '@console/internal/components/utils/datetime';
 import { Table, TableRow, TableData } from '@console/internal/components/factory';
@@ -18,28 +20,28 @@ const tableColumnClasses = [
   classNames('col-lg-3', 'col-md-3', 'hidden-sm', 'hidden-xs'),
 ];
 
-const UsersTableHeader = () => {
+const UsersTableHeader = (t: TFunction) => () => {
   return [
     {
-      title: 'User Name',
+      title: t('kubevirt-plugin~User Name'),
       sortField: 'metadata.userName',
       transforms: [sortable],
       props: { className: tableColumnClasses[0] },
     },
     {
-      title: 'Domain',
+      title: t('kubevirt-plugin~Domain'),
       sortField: 'metadata.domain',
       transforms: [sortable],
       props: { className: tableColumnClasses[1] },
     },
     {
-      title: 'Time of login',
+      title: t('kubevirt-plugin~Time of login'),
       sortField: 'metadata.loginTime',
       transforms: [sortable],
       props: { className: tableColumnClasses[2] },
     },
     {
-      title: 'Elapsed time since login',
+      title: t('kubevirt-plugin~Elapsed time since login'),
       props: { className: tableColumnClasses[3] },
     },
   ];
@@ -62,17 +64,23 @@ const UsersTableRow = ({ obj: user, index, key, style }) => {
 };
 
 export const VMUsersList: React.FC<VMUsersListProps> = ({ vmi, vmStatusBundle }) => {
+  const { t } = useTranslation();
   const [guestAgentInfoRaw, error, loading] = useGuestAgentInfo({ vmi });
   const guestAgentInfo = new GuestAgentInfoWrapper(guestAgentInfoRaw);
   const userList = guestAgentInfo.getUserList();
 
   const guestAgentFieldNotAvailMsg = getGuestAgentFieldNotAvailMsg(
+    t,
     isGuestAgentInstalled(vmi),
     vmStatusBundle.status,
   );
 
   if (!guestAgentInfoRaw) {
-    return <div className="text-center">{guestAgentFieldNotAvailMsg}</div>;
+    return (
+      <div id="guest-agent-unavailable-msg" className="text-center">
+        {guestAgentFieldNotAvailMsg}
+      </div>
+    );
   }
 
   const data =
@@ -89,13 +97,17 @@ export const VMUsersList: React.FC<VMUsersListProps> = ({ vmi, vmStatusBundle })
 
   return (
     <Table
-      aria-label="Users"
-      Header={UsersTableHeader}
+      aria-label={t('kubevirt-plugin~Users')}
+      Header={UsersTableHeader(t)}
       Row={UsersTableRow}
       data={data}
       loadError={error?.message}
       loaded={!loading}
-      EmptyMsg={() => <div className="text-center">No Active Users</div>}
+      EmptyMsg={() => (
+        <div id="no-active-users-msg" className="text-center">
+          {t('kubevirt-plugin~No Active Users')}
+        </div>
+      )}
       virtualize
     />
   );

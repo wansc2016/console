@@ -66,8 +66,10 @@ export function deleteResource(resource, ignoreNotFound = true) {
   );
 }
 
-export function deleteResources(resources) {
-  resources.forEach(deleteResource);
+export function deleteResources(resources, ignoreNotFound = true) {
+  resources.forEach((resource) => {
+    deleteResource(resource, ignoreNotFound);
+  });
 }
 
 export async function withResource(
@@ -81,6 +83,24 @@ export async function withResource(
   if (!keepResource) {
     deleteResource(resource);
     removeLeakableResource(resourceSet, resource);
+  }
+}
+
+export async function withResources(
+  resourceSet: Set<string>,
+  resources: any,
+  callback: Function,
+  keepResource: boolean = false,
+) {
+  resources.forEach((resource) => {
+    addLeakableResource(resourceSet, resource);
+  });
+  await callback();
+  if (!keepResource) {
+    resources.forEach((resource) => {
+      deleteResource(resource);
+      removeLeakableResource(resourceSet, resource);
+    });
   }
 }
 

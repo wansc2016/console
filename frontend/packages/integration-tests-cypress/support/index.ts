@@ -39,22 +39,9 @@ after(() => {
   });
 });
 
-const formatWindowError = (windowError: Error | PromiseRejectionEvent) => {
-  if (!windowError) {
-    return 'no window error detected';
-  }
-  const { reason } = windowError as PromiseRejectionEvent;
-  if (reason) {
-    return reason;
-  }
-  const { message, stack } = windowError as Error;
-  const formattedStack = stack?.replace(/\\n/g, '\n');
-  return `window error detected: ${message} ${formattedStack}`;
-};
-
 export const checkErrors = () =>
   cy.window().then((win) => {
-    assert.isTrue(!win.windowError, formatWindowError(win.windowError));
+    assert.isTrue(!win.windowError, win.windowError);
   });
 
 export const testName = `test-${Math.random()
@@ -84,3 +71,15 @@ export const editKind = (kind: string, humanizeKind: boolean) =>
   actionOnKind(actions.edit, kind, humanizeKind);
 export const deleteKind = (kind: string, humanizeKind: boolean) =>
   actionOnKind(actions.delete, kind, humanizeKind);
+
+export const create = (obj) => {
+  const filename = [
+    Cypress.config('screenshotsFolder')
+      .toString()
+      .replace('/cypress/screenshots', ''),
+    `${obj.metadata.name}.${obj.kind.toLowerCase()}.json`,
+  ].join('/');
+  cy.writeFile(filename, JSON.stringify(obj));
+  cy.exec(`kubectl create -f ${filename}`);
+  cy.exec(`rm ${filename}`);
+};

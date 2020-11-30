@@ -50,6 +50,7 @@ import {
 import reducer from './redux/reducer';
 import * as models from './models';
 import { TourContext, useTourValuesForContext } from './components/tour/tour-context';
+import '@console/internal/i18n.js';
 
 type ConsumedExtensions =
   | Perspective
@@ -229,7 +230,8 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/ResourceCluster',
     properties: {
-      section: 'Storage',
+      id: 'volumesnapshots',
+      section: 'storage',
       componentProps: {
         name: 'Volume Snapshot Contents',
         resource: referenceForModel(VolumeSnapshotContentModel),

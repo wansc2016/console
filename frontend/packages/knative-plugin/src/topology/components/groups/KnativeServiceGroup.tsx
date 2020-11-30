@@ -1,5 +1,6 @@
 import * as React from 'react';
 import classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 import { TooltipPosition, Tooltip } from '@patternfly/react-core';
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import {
@@ -18,20 +19,22 @@ import {
   useCombineRefs,
   WithCreateConnectorProps,
 } from '@patternfly/react-topology';
-import SvgBoxedText from '@console/dev-console/src/components/svg/SvgBoxedText';
 import {
   NodeShadows,
   NODE_SHADOW_FILTER_ID,
   NODE_SHADOW_FILTER_ID_HOVER,
   nodeDragSourceSpec,
   Decorator,
+  BuildDecorator,
+} from '@console/topology/src/components/graph-view';
+import {
   useSearchFilter,
   useDisplayFilters,
   useAllowEdgeCreation,
   getFilterById,
   SHOW_LABELS_FILTER_ID,
-} from '@console/dev-console/src/components/topology';
-import BuildDecorator from '@console/dev-console/src/components/topology/components/nodes/build-decorators/BuildDecorator';
+} from '@console/topology/src/filters';
+import SvgBoxedText from '@console/topology/src/components/svg/SvgBoxedText';
 import { TYPE_KNATIVE_SERVICE, EVENT_MARKER_RADIUS } from '../../const';
 import RevisionTrafficSourceAnchor from '../anchors/RevisionTrafficSourceAnchor';
 
@@ -64,6 +67,7 @@ const KnativeServiceGroup: React.FC<KnativeServiceGroupProps> = ({
   onHideCreateConnector,
   onShowCreateConnector,
 }) => {
+  const { t } = useTranslation();
   const [hover, hoverRef] = useHover();
   const [innerHover, innerHoverRef] = useHover();
   const dragSpec = React.useMemo(() => nodeDragSourceSpec(TYPE_KNATIVE_SERVICE, true, editAccess), [
@@ -77,7 +81,7 @@ const KnativeServiceGroup: React.FC<KnativeServiceGroupProps> = ({
   );
   const nodeRefs = useCombineRefs(innerHoverRef, dragNodeRef);
   const hasChildren = element.getChildren()?.length > 0;
-  const { data } = element.getData();
+  const { data, resource } = element.getData();
   const hasDataUrl = !!data.url;
   useAnchor(
     React.useCallback(
@@ -156,7 +160,7 @@ const KnativeServiceGroup: React.FC<KnativeServiceGroupProps> = ({
             />
             {!hasChildren && (
               <text x={x + width / 2} y={y + height / 2} dy="0.35em" textAnchor="middle">
-                No Revisions
+                {t('knative-plugin~No Revisions')}
               </text>
             )}
           </g>
@@ -170,7 +174,13 @@ const KnativeServiceGroup: React.FC<KnativeServiceGroupProps> = ({
             </Decorator>
           </Tooltip>
         )}
-        <BuildDecorator x={x} y={y + height} radius={DECORATOR_RADIUS} workloadData={data} />
+        <BuildDecorator
+          x={x}
+          y={y + height}
+          radius={DECORATOR_RADIUS}
+          workloadData={data}
+          resource={resource}
+        />
         {showLabels && (data.kind || element.getLabel()) && (
           <SvgBoxedText
             className="odc-knative-service__label odc-base-node__label"

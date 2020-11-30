@@ -6,7 +6,7 @@ import {
   referenceForModel,
   K8sKind,
 } from '@console/internal/module/k8s';
-import { TopologyDataResources } from '@console/dev-console/src/components/topology';
+import { TopologyDataResources } from '@console/topology/src/topology-types';
 import {
   ConfigurationModel,
   RouteModel,
@@ -23,6 +23,7 @@ import {
   EventingIMCModel,
   EventingBrokerModel,
   EventingTriggerModel,
+  CamelKameletBindingModel,
 } from '../../models';
 import {
   RevisionKind,
@@ -683,6 +684,55 @@ export const sampleEventSourceSinkbinding: FirehoseResult = {
   ],
 };
 
+export const sampleSourceKameletBinding: FirehoseResult = {
+  loaded: true,
+  loadError: '',
+  data: [
+    {
+      kind: CamelKameletBindingModel.kind,
+      apiVersion: `${CamelKameletBindingModel.apiGroup}/${CamelKameletBindingModel.apiVersion}`,
+      metadata: {
+        annotations: {
+          'camel.apache.org/kamelet.icon':
+            'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgMjQwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSIuNjY3IiB4Mj0iLjQxNyIgeTE9Ii4xNjciIHkyPSIuNzUiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzM3YWVlMiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzFlOTZjOCIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJiIiB4MT0iLjY2IiB4Mj0iLjg1MSIgeTE9Ii40MzciIHkyPSIuODAyIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNlZmY3ZmMiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSIxMjAiIGN5PSIxMjAiIHI9IjEyMCIgZmlsbD0idXJsKCNhKSIvPjxwYXRoIGZpbGw9IiNjOGRhZWEiIGQ9Ik05OCAxNzVjLTMuODg4IDAtMy4yMjctMS40NjgtNC41NjgtNS4xN0w4MiAxMzIuMjA3IDE3MCA4MCIvPjxwYXRoIGZpbGw9IiNhOWM5ZGQiIGQ9Ik05OCAxNzVjMyAwIDQuMzI1LTEuMzcyIDYtM2wxNi0xNS41NTgtMTkuOTU4LTEyLjAzNSIvPjxwYXRoIGZpbGw9InVybCgjYikiIGQ9Ik0xMDAuMDQgMTQ0LjQxbDQ4LjM2IDM1LjcyOWM1LjUxOSAzLjA0NSA5LjUwMSAxLjQ2OCAxMC44NzYtNS4xMjNsMTkuNjg1LTkyLjc2M2MyLjAxNS04LjA4LTMuMDgtMTEuNzQ2LTguMzYtOS4zNDlsLTExNS41OSA0NC41NzFjLTcuODkgMy4xNjUtNy44NDMgNy41NjctMS40MzggOS41MjhsMjkuNjYzIDkuMjU5IDY4LjY3My00My4zMjVjMy4yNDItMS45NjYgNi4yMTgtLjkxIDMuNzc2IDEuMjU4Ii8+PC9zdmc+',
+        },
+        selfLink:
+          '/apis/camel.apache.org/v1alpha1/namespaces/jai-test/kameletbindings/overlayimage',
+        resourceVersion: '267611',
+        name: 'overlayimage',
+        uid: '3343caf6-f23f-420a-888e-e2c06aaaa843',
+        creationTimestamp: '2020-11-17T07:06:51Z',
+        generation: 3,
+        namespace: 'testproject3',
+      },
+      spec: {
+        sink: {
+          ref: { apiVersion: 'serving.knative.dev/v1', kind: 'Service', name: 'event-display' },
+        },
+        source: {
+          properties: { authorizationToken: 'token' },
+          ref: {
+            apiVersion: 'camel.apache.org/v1alpha1',
+            kind: 'Kamelet',
+            name: 'telegram-source',
+          },
+        },
+      },
+      status: {
+        conditions: [
+          {
+            lastTransitionTime: '2020-11-17T08:19:41Z',
+            lastUpdateTime: '2020-11-17T08:19:41Z',
+            status: 'True',
+            type: 'Ready',
+          },
+        ],
+        phase: 'Ready',
+      },
+    },
+  ],
+};
+
 export const sampleServices: FirehoseResult = {
   loaded: true,
   loadError: '',
@@ -1029,4 +1079,105 @@ export const MockKnativeResources: TopologyDataResources = {
   clusterServiceVersions: sampleClusterServiceVersions,
   triggers: sampleTriggers,
   brokers: sampleBrokers,
+  [CamelKameletBindingModel.plural]: sampleSourceKameletBinding,
+};
+
+export const MockKnativeBuildConfig = {
+  metadata: {
+    annotations: {
+      'openshift.io/build-config.name': 'react-web-app',
+      'openshift.io/build.number': '1',
+      'openshift.io/build.pod-name': 'react-web-app-1-build',
+    },
+    selfLink: '/apis/build.openshift.io/v1/namespaces/andrew-test/builds/react-web-app-1',
+    resourceVersion: '696608',
+    name: 'react-web-app-1',
+    uid: 'fd52472d-f752-11e9-81ae-0a580a810022',
+    creationTimestamp: '2019-10-25T18:12:22Z',
+    namespace: 'andrew-test',
+    ownerReferences: [
+      {
+        apiVersion: 'build.openshift.io/v1',
+        kind: 'BuildConfig',
+        name: 'react-web-app',
+        uid: 'fd28333b-f752-11e9-81ae-0a580a810022',
+        controller: true,
+      },
+    ],
+    labels: {
+      app: 'react-web-app',
+      'app.kubernetes.io/part-of': 'react-web-app-app',
+      'app.kubernetes.io/instance': 'react-web-app',
+      'openshift.io/build-config.name': 'react-web-app',
+      'app.kubernetes.io/component': 'react-web-app',
+      'openshift.io/build.start-policy': 'Serial',
+      buildconfig: 'react-web-app',
+      'app.openshift.io/runtime': 'modern-webapp',
+      'app.kubernetes.io/name': 'modern-webapp',
+      'app.openshift.io/runtime-version': '10.x',
+    },
+  },
+  spec: {
+    nodeSelector: null,
+    output: {
+      to: { kind: 'ImageStreamTag', name: 'react-web-app:latest' },
+      pushSecret: { name: 'builder-dockercfg-9jcf2' },
+    },
+    resources: {},
+    triggeredBy: [
+      {
+        message: 'Image change',
+        imageChangeBuild: {
+          imageID:
+            'image-registry.openshift-image-registry.svc:5000/openshift/modern-webapp@sha256:eb672caddbf6f1d2283ecc2e7f69142bd605f5a0067c951dd9b829f29343edc4',
+          fromRef: { kind: 'ImageStreamTag', namespace: 'openshift', name: 'modern-webapp:10.x' },
+        },
+      },
+    ],
+    strategy: {
+      type: 'Source',
+      sourceStrategy: {
+        from: {
+          kind: 'DockerImage',
+          name:
+            'image-registry.openshift-image-registry.svc:5000/openshift/modern-webapp@sha256:eb672caddbf6f1d2283ecc2e7f69142bd605f5a0067c951dd9b829f29343edc4',
+        },
+        pullSecret: { name: 'builder-dockercfg-9jcf2' },
+      },
+    },
+    postCommit: {},
+    serviceAccount: 'builder',
+    source: {
+      type: 'Git',
+      git: { uri: 'https://github.com/nodeshift-starters/react-web-app' },
+      contextDir: '/',
+    },
+    revision: {
+      type: 'Git',
+      git: {
+        commit: '32b53d1a23d8148077f2095226bd4e8afcd1ce4a',
+        author: { name: 'Lucas Holmquist', email: 'lholmqui@redhat.com' },
+        committer: { name: 'Lucas Holmquist', email: 'lholmqui@redhat.com' },
+        message: 'chore: text updates',
+      },
+    },
+  },
+  status: {
+    phase: 'Running',
+    startTimestamp: '2019-10-25T18:12:22Z',
+    outputDockerImageReference:
+      'image-registry.openshift-image-registry.svc:5000/andrew-test/react-web-app:latest',
+    config: { kind: 'BuildConfig', namespace: 'andrew-test', name: 'react-web-app' },
+    output: {},
+    stages: [
+      {
+        name: 'FetchInputs',
+        startTime: '2019-10-25T18:12:30Z',
+        durationMilliseconds: 479,
+        steps: [
+          { name: 'FetchGitSource', startTime: '2019-10-25T18:12:30Z', durationMilliseconds: 479 },
+        ],
+      },
+    ],
+  },
 };

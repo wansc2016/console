@@ -156,7 +156,11 @@ const Details = ({ obj: serviceaccount }) => {
     <>
       <div className="co-m-pane__body">
         <SectionHeading text={t('service-account~Service Account details')} />
-        <ResourceSummary resource={serviceaccount} />
+        <div className="row">
+          <div className="col-md-6">
+            <ResourceSummary resource={serviceaccount} />
+          </div>
+        </div>
       </div>
       <div className="co-m-pane__body co-m-pane__body--section-heading">
         <SectionHeading text={t('service-account~Secrets')} />

@@ -1,10 +1,12 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Firehose, FirehoseResource, LoadingBox } from '@console/internal/components/utils';
 import { ImageStreamModel } from '@console/internal/models';
 import { RouteComponentProps } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { ServiceModel } from '@console/knative-plugin';
 import { referenceForModel } from '@console/internal/module/k8s';
+import { PipelineModel } from '@console/pipelines-plugin/src/models';
 import NamespacedPage, { NamespacedPageVariants } from '../NamespacedPage';
 import EditApplication from './EditApplication';
 import { EditApplicationProps } from './edit-application-types';
@@ -20,6 +22,7 @@ const EditApplicationComponentLoader: React.FunctionComponent<EditApplicationPro
 export type ImportPageProps = RouteComponentProps<{ ns?: string }>;
 
 const EditApplicationPage: React.FunctionComponent<ImportPageProps> = ({ match, location }) => {
+  const { t } = useTranslation();
   const namespace = match.params.ns;
   const queryParams = new URLSearchParams(location.search);
   const editAppResourceKind = queryParams.get('kind');
@@ -35,6 +38,13 @@ const EditApplicationPage: React.FunctionComponent<ImportPageProps> = ({ match, 
     {
       kind: 'BuildConfig',
       prop: 'buildConfig',
+      name: appName,
+      namespace,
+      optional: true,
+    },
+    {
+      kind: referenceForModel(PipelineModel),
+      prop: PipelineModel.id,
       name: appName,
       namespace,
       optional: true,
@@ -79,7 +89,7 @@ const EditApplicationPage: React.FunctionComponent<ImportPageProps> = ({ match, 
   return (
     <NamespacedPage disabled variant={NamespacedPageVariants.light}>
       <Helmet>
-        <title>Edit</title>
+        <title>{t('devconsole~Edit')}</title>
       </Helmet>
       <div className="co-m-pane__body">
         <Firehose resources={appResources}>

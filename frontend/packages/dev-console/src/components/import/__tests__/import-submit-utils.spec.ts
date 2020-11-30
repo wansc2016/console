@@ -9,11 +9,11 @@ import {
   BuildConfigModel,
   SecretModel,
 } from '@console/internal/models';
+import * as pipelineUtils from '@console/pipelines-plugin/src/components/import/pipeline/pipeline-template-utils';
+import { PipelineModel } from '@console/pipelines-plugin/src/models';
 import { Resources } from '../import-types';
 import * as submitUtils from '../import-submit-utils';
-import * as pipelineUtils from '../pipeline/pipeline-template-utils';
 import { defaultData, nodeJsBuilderImage as buildImage } from './import-submit-utils-data';
-import { PipelineModel } from '../../../models';
 
 const { createOrUpdateDeployment, createOrUpdateResources } = submitUtils;
 
@@ -162,18 +162,39 @@ describe('Import Submit Utils', () => {
       const mockData = _.cloneDeep(defaultData);
       mockData.pipeline.enabled = true;
 
-      const createPipelineResourceSpy = jest.spyOn(pipelineUtils, 'createPipelineForImportFlow');
-
-      const returnValue = await createOrUpdateResources(
-        mockData,
-        buildImage.obj,
-        false,
-        false,
-        'create',
+      const createPipelineResourceSpy = jest
+        .spyOn(pipelineUtils, 'createPipelineForImportFlow')
+        .mockImplementation((name, namespace) => {
+          return {
+            metadata: {
+              name,
+              namespace,
+              labels: { 'app.kubernetes.io/instance': name },
+            },
+            spec: {
+              params: [],
+              resources: [],
+              tasks: [],
+            },
+          };
+        });
+      const createPipelineRunResourceSpy = jest.spyOn(
+        pipelineUtils,
+        'createPipelineRunForImportFlow',
       );
-      expect(createPipelineResourceSpy).toHaveBeenCalledWith(mockData);
-      const models = returnValue.map((data) => _.get(data, 'model.kind'));
-      expect(models.includes(PipelineModel.kind)).toEqual(true);
+
+      await createOrUpdateResources(mockData, buildImage.obj, false, false, 'create');
+      expect(createPipelineResourceSpy).toHaveBeenCalledWith(
+        mockData.name,
+        mockData.project.name,
+        mockData.git.url,
+        mockData.git.ref,
+        mockData.git.dir,
+        mockData.pipeline,
+        mockData.docker.dockerfilePath,
+      );
+      expect(createPipelineRunResourceSpy).toHaveBeenCalledTimes(1);
+      expect(createPipelineRunResourceSpy).not.toThrowError();
       done();
     });
 
@@ -191,9 +212,55 @@ describe('Import Submit Utils', () => {
         'create',
       );
 
-      expect(createPipelineResourceSpy).toHaveBeenCalledWith(mockData);
-      const pipelineResource = returnValue[6].data;
-      expect(pipelineResource.metadata.name).toEqual(mockData.name);
+      expect(createPipelineResourceSpy).toHaveBeenCalledWith(
+        mockData.name,
+        mockData.project.name,
+        mockData.git.url,
+        mockData.git.ref,
+        mockData.git.dir,
+        mockData.pipeline,
+        mockData.docker.dockerfilePath,
+      );
+      const pipelineRunResource = returnValue[1].data;
+      expect(pipelineRunResource.metadata.name.includes(mockData.name)).toEqual(true);
+      done();
+    });
+    it('should suppress the error if the pipelinerun creation fails with the error', async (done) => {
+      const mockData = _.cloneDeep(defaultData);
+      mockData.resources = Resources.Kubernetes;
+      mockData.pipeline.enabled = true;
+      const createPipelineResourceSpy = jest.spyOn(pipelineUtils, 'createPipelineForImportFlow');
+
+      const createPipelineRunSpy = jest
+        .spyOn(pipelineUtils, 'createPipelineRunForImportFlow')
+        .mockImplementation(() => Promise.reject(new Error('PipelineRun error')));
+
+      const returnValue = await createOrUpdateResources(
+        mockData,
+        buildImage.obj,
+        false,
+        false,
+        'create',
+      );
+      const models = returnValue.map((r) => r['model.kind']);
+      expect(createPipelineResourceSpy).not.toThrow();
+      expect(createPipelineRunSpy).not.toThrow();
+      expect(returnValue).toBeDefined();
+      expect(models).toHaveLength(6);
+      done();
+    });
+
+    it('should throw error if the deployment creation fails with the error', async (done) => {
+      const mockData = _.cloneDeep(defaultData);
+      mockData.resources = Resources.Kubernetes;
+      mockData.pipeline.enabled = true;
+      jest
+        .spyOn(submitUtils, 'createOrUpdateDeployment')
+        .mockImplementation(() => Promise.reject(new Error('Deployment')));
+
+      await expect(
+        createOrUpdateResources(mockData, buildImage.obj, false, false, 'create'),
+      ).rejects.toEqual(new Error('Deployment'));
       done();
     });
 

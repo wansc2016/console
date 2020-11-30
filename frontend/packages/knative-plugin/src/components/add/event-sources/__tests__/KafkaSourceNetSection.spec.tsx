@@ -3,22 +3,32 @@ import { shallow } from 'enzyme';
 import KafkaSourceNetSection from '../KafkaSourceNetSection';
 import SecretKeySelector from '../../SecretKeySelector';
 
+jest.mock('react-i18next', () => {
+  const reactI18next = require.requireActual('react-i18next');
+  return {
+    ...reactI18next,
+    useTranslation: () => ({ t: (key) => key }),
+  };
+});
+
 jest.mock('formik', () => ({
   useFormikContext: jest.fn(() => ({
     values: {
-      data: {
-        KafkaSource: {
-          net: {
-            sasl: {
-              enable: true,
-              user: { secretKeyRef: { name: '', key: '' } },
-              password: { secretKeyRef: { name: '', key: '' } },
-            },
-            tls: {
-              enable: true,
-              caCert: { secretKeyRef: { name: '', key: '' } },
-              cert: { secretKeyRef: { name: '', key: '' } },
-              key: { secretKeyRef: { name: '', key: '' } },
+      formData: {
+        data: {
+          KafkaSource: {
+            net: {
+              sasl: {
+                enable: true,
+                user: { secretKeyRef: { name: '', key: '' } },
+                password: { secretKeyRef: { name: '', key: '' } },
+              },
+              tls: {
+                enable: true,
+                caCert: { secretKeyRef: { name: '', key: '' } },
+                cert: { secretKeyRef: { name: '', key: '' } },
+                key: { secretKeyRef: { name: '', key: '' } },
+              },
             },
           },
         },

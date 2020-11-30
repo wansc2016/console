@@ -16,12 +16,19 @@ import { SecretType } from '@console/internal/components/secrets/create-secret';
 import { history } from '@console/internal/components/utils';
 import { getRandomChars } from '@console/shared/src/utils';
 import {
+  createPipelineForImportFlow,
+  createPipelineRunForImportFlow,
+} from '@console/pipelines-plugin/src/components/import/pipeline/pipeline-template-utils';
+import { Perspective } from '@console/plugin-sdk';
+import { setPipelineNotStarted } from '@console/pipelines-plugin/src/components/pipelines/pipeline-overview/pipeline-overview-utils';
+import {
   getAppLabels,
   getPodLabels,
   getGitAnnotations,
   getCommonAnnotations,
   getTriggerAnnotation,
   mergeData,
+  getTemplateLabels,
 } from '../../utils/resource-label-utils';
 import { createService, createRoute, dryRunOpt } from '../../utils/shared-submit-utils';
 import { getProbesData } from '../health-checks/create-health-checks-probe-utils';
@@ -33,8 +40,6 @@ import {
   GitReadableTypes,
   Resources,
 } from './import-types';
-import { createPipelineForImportFlow } from './pipeline/pipeline-template-utils';
-import { Perspective } from '@console/plugin-sdk';
 
 export const generateSecret = () => {
   // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -255,6 +260,7 @@ export const createOrUpdateDeployment = (
     ...getTriggerAnnotation(name, namespace, imageChange),
   };
   const podLabels = getPodLabels(name);
+  const templateLabels = getTemplateLabels(originalDeployment);
 
   const newDeployment = {
     apiVersion: 'apps/v1',
@@ -274,7 +280,7 @@ export const createOrUpdateDeployment = (
       replicas,
       template: {
         metadata: {
-          labels: { ...userLabels, ...podLabels },
+          labels: { ...templateLabels, ...userLabels, ...podLabels },
         },
         spec: {
           containers: [
@@ -334,6 +340,7 @@ export const createOrUpdateDeploymentConfig = (
   const defaultLabels = getAppLabels({ name, applicationName, imageStreamName, selectedTag });
   const defaultAnnotations = { ...getGitAnnotations(repository, ref), ...getCommonAnnotations() };
   const podLabels = getPodLabels(name);
+  const templateLabels = getTemplateLabels(originalDeploymentConfig);
 
   const newDeploymentConfig = {
     apiVersion: 'apps.openshift.io/v1',
@@ -349,7 +356,7 @@ export const createOrUpdateDeploymentConfig = (
       replicas,
       template: {
         metadata: {
-          labels: { ...userLabels, ...podLabels },
+          labels: { ...templateLabels, ...userLabels, ...podLabels },
         },
         spec: {
           containers: [
@@ -439,6 +446,7 @@ export const createOrUpdateResources = async (
   ) {
     generatedImageStreamName = `${name}-${getRandomChars()}`;
   }
+
   requests.push(
     createOrUpdateImageStream(
       formData,
@@ -448,23 +456,40 @@ export const createOrUpdateResources = async (
       generatedImageStreamName ? 'create' : verb,
       generatedImageStreamName,
     ),
-    createOrUpdateBuildConfig(
-      formData,
-      imageStream,
-      dryRun,
-      _.get(appResources, 'buildConfig.data'),
-      verb,
-      generatedImageStreamName,
-    ),
   );
+  if (!pipeline.enabled) {
+    requests.push(
+      createOrUpdateBuildConfig(
+        formData,
+        imageStream,
+        dryRun,
+        appResources?.buildConfig?.data,
+        verb,
+        generatedImageStreamName,
+      ),
+    );
+  } else if (pipeline.template && !dryRun) {
+    const newPipeline = await createPipelineForImportFlow(
+      formData.name,
+      formData.project.name,
+      formData.git.url,
+      formData.git.ref,
+      formData.git.dir,
+      formData.pipeline,
+      formData.docker.dockerfilePath,
+    );
+    try {
+      await createPipelineRunForImportFlow(newPipeline);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.log(error);
+      setPipelineNotStarted(newPipeline.metadata.name, newPipeline.metadata.namespace);
+    }
+  }
 
   verb === 'create' && requests.push(createWebhookSecret(formData, 'generic', dryRun));
 
   const defaultAnnotations = getGitAnnotations(repository, ref);
-
-  if (pipeline.enabled && pipeline.template && !dryRun) {
-    requests.push(createPipelineForImportFlow(formData));
-  }
 
   if (formData.resources === Resources.KnativeService) {
     // knative service doesn't have dry run capability so returning the promises.

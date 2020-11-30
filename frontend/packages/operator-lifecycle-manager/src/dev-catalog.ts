@@ -4,7 +4,7 @@ import { ClusterServiceVersionKind } from './types';
 import { referenceForProvidedAPI, providedAPIsFor } from './components';
 import * as operatorLogo from './operator.svg';
 
-const isInternal = (crd: { name: string }): boolean => {
+export const isInternal = (crd: { name: string }): boolean => {
   const internalOpListString = _.get(
     crd,
     ['csv', 'metadata', 'annotations', 'operators.operatorframework.io/internal-objects'],
@@ -65,7 +65,7 @@ export const normalizeClusterServiceVersions = (
       tileProvider: desc.csv.spec.provider.name,
       tags: desc.csv.spec.keywords,
       createLabel: 'Create',
-      href: `/ns/${desc.csv.metadata.namespace}/clusterserviceversions/${
+      href: `/k8s/ns/${desc.csv.metadata.namespace}/clusterserviceversions/${
         desc.csv.metadata.name
       }/${referenceForProvidedAPI(desc)}/~new`,
       supportUrl: desc.csv.metadata.annotations?.['marketplace.openshift.io/support-workflow'],

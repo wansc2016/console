@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as _ from 'lodash';
 import { Helmet } from 'react-helmet';
 import { match } from 'react-router';
+import { Trans, useTranslation } from 'react-i18next';
 import { ActionGroup, Alert, Button, Checkbox, Popover } from '@patternfly/react-core';
 import {
   Dropdown,
@@ -39,12 +40,14 @@ import {
   InstallModeType,
 } from '../../types';
 import {
-  defaultChannelFor,
-  supportedInstallModesFor,
   ClusterServiceVersionLogo,
+  defaultChannelFor,
+  getManualSubscriptionsInNamespace,
+  iconFor,
+  NamespaceIncludesManualApproval,
   providedAPIsForChannel,
   referenceForProvidedAPI,
-  iconFor,
+  supportedInstallModesFor,
 } from '../index';
 import { installedFor, supports, providedAPIsFor, isGlobal } from '../operator-group';
 import { CRDCard } from '../clusterserviceversion';
@@ -65,6 +68,7 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
   ] = React.useState(true);
   const [enableMonitoring, setEnableMonitoring] = React.useState(false);
   const [error, setError] = React.useState('');
+  const { t } = useTranslation();
 
   const { name: pkgName } = props.packageManifest.data[0].metadata;
   const {
@@ -219,7 +223,7 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
   };
   const conflictingProvidedAPIs = (ns: string) => {
     const operatorGroups = props.operatorGroup.data.filter(
-      (og) => og.status.namespaces.includes(ns) || isGlobal(og),
+      (og) => og.status?.namespaces?.includes(ns) || isGlobal(og),
     );
     if (_.isEmpty(operatorGroups)) {
       return [];
@@ -280,7 +284,7 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
       subjects: [
         {
           kind: 'ServiceAccount',
-          name: 'prometheus-operator',
+          name: 'prometheus-k8s',
           namespace: 'openshift-monitoring',
         },
       ],
@@ -445,6 +449,7 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
         <div className="co-form-subsection">
           <Checkbox
             id="enable-monitoring-checkbox"
+            data-test="enable-monitoring"
             label="Enable operator recommended cluster monitoring on this namespace"
             onChange={setEnableMonitoring}
             isChecked={enableMonitoring}
@@ -557,6 +562,11 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
       />
     );
   }
+
+  const manualSubscriptionsInNamespace = getManualSubscriptionsInNamespace(
+    props.subscription.data,
+    selectedTargetNamespace,
+  );
 
   return (
     <>
@@ -673,13 +683,51 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
                     ]}
                     onChange={(e) => setApproval(e.currentTarget.value)}
                   />
+                  {approval === InstallPlanApproval.Automatic &&
+                    manualSubscriptionsInNamespace?.length > 0 && (
+                      <Alert
+                        isInline
+                        className="co-alert co-alert--margin-top"
+                        variant="info"
+                        title={t(
+                          'operator-hub-subscribe~Will function as manual approval strategy',
+                        )}
+                      >
+                        <NamespaceIncludesManualApproval
+                          subscriptions={manualSubscriptionsInNamespace}
+                          namespace={selectedTargetNamespace}
+                        />
+                      </Alert>
+                    )}
+                  {approval === InstallPlanApproval.Manual && (
+                    <Alert
+                      isInline
+                      className="co-alert co-alert--margin-top"
+                      variant="info"
+                      title={t(
+                        'operator-hub-subscribe~Manual approval applies to all operators in a namespace',
+                      )}
+                    >
+                      <Trans ns="operator-hub-subscribe">
+                        Installing an operator with manual approval causes all operators installed
+                        in namespace <strong>{{ selectedTargetNamespace }}</strong> to function as
+                        manual approval strategy. To allow automatic approval, all operators
+                        installed in the namespace must use automatic approval strategy.
+                      </Trans>
+                    </Alert>
+                  )}
                 </fieldset>
               </div>
             </>
             <div className="co-form-section__separator" />
             {formError()}
             <ActionGroup className="pf-c-form">
-              <Button onClick={() => submit()} isDisabled={formValid()} variant="primary">
+              <Button
+                data-test="install-operator"
+                onClick={() => submit()}
+                isDisabled={formValid()}
+                variant="primary"
+              >
                 Install
               </Button>
               <Button variant="secondary" onClick={() => history.push('/operatorhub')}>

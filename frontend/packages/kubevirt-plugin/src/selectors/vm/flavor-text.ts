@@ -4,6 +4,11 @@ import { humanizeBinaryBytes } from '@console/internal/components/utils';
 import { convertToBytes } from '../../components/form/size-unit-utils';
 import { toUIFlavorLabel } from '../vm-like/flavor';
 
+export const humanizeMemory = (memory: string): string => {
+  const memoryBase = convertToBytes(memory);
+  return humanizeBinaryBytes(memoryBase).string;
+};
+
 export const getFlavorText = ({
   cpu,
   memory,
@@ -11,13 +16,14 @@ export const getFlavorText = ({
 }: {
   cpu: CPURaw;
   memory: string;
-  flavor: string;
+  flavor?: string;
 }) => {
   const vcpusCount = vCPUCount(cpu);
   const vcpusText = `${vcpusCount} vCPU${vcpusCount > 1 ? 's' : ''}`;
 
-  const memoryBase = convertToBytes(memory);
-  const memoryText = humanizeBinaryBytes(memoryBase).string;
+  const memoryText = humanizeMemory(memory);
 
-  return `${toUIFlavorLabel(flavor)}: ${vcpusText}, ${memoryText} Memory`;
+  return (flavor ? `${toUIFlavorLabel(flavor)}: ` : '').concat(
+    `${vcpusText}, ${memoryText} Memory`,
+  );
 };

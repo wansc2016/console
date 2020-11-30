@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import { K8sResourceKind } from '@console/internal/module/k8s';
 import { TRIGGERS_ANNOTATION } from '@console/shared';
-import { UNASSIGNED_LABEL } from '../const';
+import { UNASSIGNED_LABEL } from '@console/topology/src/const';
 
 export const getAppLabels = ({
   name,
@@ -103,4 +103,17 @@ export const mergeData = (originalResource: K8sResourceKind, newResource: K8sRes
     mergedData.spec.triggers = newResource.spec.triggers;
   }
   return mergedData;
+};
+
+export const getTemplateLabels = (deployment: K8sResourceKind) => {
+  return _.reduce(
+    deployment?.spec?.template?.metadata?.labels,
+    (acc, value, key) => {
+      if (!deployment.metadata?.labels?.hasOwnProperty(key)) {
+        acc[key] = value;
+      }
+      return acc;
+    },
+    {},
+  );
 };

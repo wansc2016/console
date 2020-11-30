@@ -2,25 +2,20 @@ const fs = require('fs');
 const path = require('path');
 const common = require('./common.js');
 
-// eslint-disable-next-line no-undef
 const public = path.join(__dirname, './../public/locales/');
-// eslint-disable-next-line no-undef
 const packages = path.join(__dirname, './../packages');
 
 const publicFileNames = {};
 
 function processFile(fileName) {
   const language = path.basename(path.dirname(fileName));
-  if (publicFileNames[language].includes(path.basename(fileName))) {
-    // eslint-disable-next-line no-console
+  if (publicFileNames[language] && publicFileNames[language].includes(path.basename(fileName))) {
     console.log(`Merging ${fileName} with matching public namespace.`);
     const file = require(fileName);
-    /* eslint-disable no-undef, no-console */
     const publicFile = path.join(
       __dirname,
       `./../public/locales/${language}/${path.basename(fileName)}`,
     );
-    /* eslint-enable */
     const keys = Object.keys(file);
 
     const data = fs.readFileSync(publicFile);
@@ -31,7 +26,6 @@ function processFile(fileName) {
       if (!json.hasOwnProperty(keys[i])) {
         json[keys[i]] = file[keys[i]];
       } else {
-        // eslint-disable-next-line no-console
         console.log(
           `Conflict: Key "${keys[i]}" in ${publicFile} already exists. Skipping merge for "${keys[i]}."`,
         );
@@ -45,13 +39,7 @@ function processFile(fileName) {
 }
 
 function processLocalesFolder(filePath) {
-  if (path.basename(filePath) === 'en') {
-    common.parseFolder(filePath, processFile);
-  }
-  if (path.basename(filePath) === 'zh') {
-    common.parseFolder(filePath, processFile);
-  }
-  if (path.basename(filePath) === 'ja') {
+  if (common.isDirectory(filePath)) {
     common.parseFolder(filePath, processFile);
   }
 }
@@ -80,13 +68,7 @@ function logFiles(filePath) {
 }
 
 function processPublic(filePath) {
-  if (path.basename(filePath) === 'en') {
-    common.parseFolder(filePath, logFiles);
-  }
-  if (path.basename(filePath) === 'zh') {
-    common.parseFolder(filePath, logFiles);
-  }
-  if (path.basename(filePath) === 'ja') {
+  if (common.isDirectory(filePath)) {
     common.parseFolder(filePath, logFiles);
   }
 }

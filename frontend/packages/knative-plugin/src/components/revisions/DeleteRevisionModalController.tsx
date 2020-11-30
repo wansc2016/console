@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Formik, FormikHelpers, FormikValues } from 'formik';
+import { useTranslation } from 'react-i18next';
 import { ActionGroup, Button } from '@patternfly/react-core';
 import { RedExclamationCircleIcon } from '@console/shared';
 import {
@@ -24,11 +25,11 @@ import {
 import { KNATIVE_SERVING_LABEL } from '../../const';
 import { RevisionModel, ServiceModel } from '../../models';
 import {
-  transformTrafficSplittingData,
   knativeServingResourcesTrafficSplitting,
   getRevisionItems,
   constructObjForUpdate,
 } from '../../utils/traffic-splitting-utils';
+import { getKnativeRevisionsData } from '../../topology/knative-topology-utils';
 import { TrafficSplittingType } from '../traffic-splitting/TrafficSplitting';
 import DeleteRevisionModal from './DeleteRevisionModal';
 import { Traffic } from '../../types';
@@ -46,6 +47,7 @@ type ControllerProps = {
 };
 
 const Controller: React.FC<ControllerProps> = ({ loaded, resources, revision, cancel, close }) => {
+  const { t } = useTranslation();
   if (!loaded) {
     return null;
   }
@@ -53,7 +55,7 @@ const Controller: React.FC<ControllerProps> = ({ loaded, resources, revision, ca
     return revision.metadata.labels[KNATIVE_SERVING_LABEL] === s.metadata.name;
   });
 
-  const revisions = transformTrafficSplittingData(service, resources).filter(
+  const revisions = getKnativeRevisionsData(service, resources).filter(
     (r) => revision.metadata.uid !== r.metadata.uid,
   );
 
@@ -62,11 +64,14 @@ const Controller: React.FC<ControllerProps> = ({ loaded, resources, revision, ca
       <form className="modal-content" onSubmit={close}>
         <ModalTitle>
           <RedExclamationCircleIcon className="co-icon-space-r" />
-          Unable to delete {RevisionModel.label}
+          {t('knative-plugin~Unable to delete {{revlabel}}', { revlabel: RevisionModel.label })}
         </ModalTitle>
         <ModalBody>
           <p>
-            You cannot delete the last {RevisionModel.label} for the {ServiceModel.label}.
+            {t('knative-plugin~You cannot delete the last {{revlabel}} for the {{serviceLabel}}.', {
+              revlabel: RevisionModel.label,
+              serviceLabel: ServiceModel.label,
+            })}
           </p>
         </ModalBody>
         <ModalFooter inProgress={false}>
@@ -77,7 +82,7 @@ const Controller: React.FC<ControllerProps> = ({ loaded, resources, revision, ca
               data-test-id="modal-cancel-action"
               onClick={close}
             >
-              OK
+              {t('knative-plugin~OK')}
             </Button>
           </ActionGroup>
         </ModalFooter>
@@ -88,19 +93,19 @@ const Controller: React.FC<ControllerProps> = ({ loaded, resources, revision, ca
   const revisionItems = getRevisionItems(revisions);
 
   const traffic = service?.spec?.traffic ?? [{ percent: 0, tag: '', revisionName: '' }];
-  const deleteTraffic = traffic.find((t) => t.revisionName === revision.metadata.name);
+  const deleteTraffic = traffic.find((tr) => tr.revisionName === revision.metadata.name);
 
   const initialValues: TrafficSplittingType = {
-    trafficSplitting: traffic.reduce((acc: Traffic[], t) => {
-      if (!t.revisionName || revisions.find((r) => r.metadata.name === t.revisionName)) {
-        const trafficIndex = acc.findIndex((val) => val.revisionName === t.revisionName);
+    trafficSplitting: traffic.reduce((acc: Traffic[], tr) => {
+      if (!tr.revisionName || revisions.find((r) => r.metadata.name === tr.revisionName)) {
+        const trafficIndex = acc.findIndex((val) => val.revisionName === tr.revisionName);
         if (trafficIndex >= 0) {
-          acc[trafficIndex].percent += t.percent;
+          acc[trafficIndex].percent += tr.percent;
         } else {
           acc.push({
-            percent: t.percent,
-            tag: t.tag || '',
-            revisionName: t.revisionName || '',
+            percent: tr.percent,
+            tag: tr.tag || '',
+            revisionName: tr.revisionName || '',
           });
         }
       }
@@ -127,7 +132,8 @@ const Controller: React.FC<ControllerProps> = ({ loaded, resources, revision, ca
         }
       })
       .catch((err) => {
-        action.setStatus({ error: err.message || 'An error occurred. Please try again' });
+        const errMessage = err.message || t('knative-plugin~An error occurred. Please try again');
+        action.setStatus({ error: errMessage });
       });
   };
 
@@ -143,7 +149,8 @@ const Controller: React.FC<ControllerProps> = ({ loaded, resources, revision, ca
         deleteRevision(action);
       })
       .catch((err) => {
-        action.setStatus({ error: err.message || 'An error occurred. Please try again' });
+        const errMessage = err.message || t('knative-plugin~An error occurred. Please try again');
+        action.setStatus({ error: errMessage });
       });
   };
 

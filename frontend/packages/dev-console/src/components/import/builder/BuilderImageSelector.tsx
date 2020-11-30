@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as _ from 'lodash';
+import { Trans, useTranslation } from 'react-i18next';
 import { useFormikContext, FormikValues } from 'formik';
 import { LoadingInline } from '@console/internal/components/utils';
 import { FormGroup, Alert } from '@patternfly/react-core';
@@ -16,15 +17,16 @@ const BuilderImageSelector: React.FC<BuilderImageSelectorProps> = ({
   loadingImageStream,
   builderImages,
 }) => {
-  const { values, setFieldValue, setFieldTouched } = useFormikContext<FormikValues>();
-  const { selected, recommended, isRecommending, couldNotRecommend } = values.image;
+  const { t } = useTranslation();
+  const { values, setFieldValue, setFieldTouched, validateForm } = useFormikContext<FormikValues>();
+  const { selected, recommended, isRecommending, couldNotRecommend, tag } = values.image;
 
   React.useEffect(() => {
-    if (selected) {
-      setFieldValue('image.tag', _.get(builderImages, `${selected}.recentTag.name`, ''));
+    if (selected && !tag) {
+      setFieldValue('image.tag', builderImages?.[selected]?.recentTag?.name ?? '');
       setFieldTouched('image.tag', true);
     }
-  }, [selected, setFieldValue, setFieldTouched, builderImages]);
+  }, [selected, setFieldValue, setFieldTouched, builderImages, tag]);
 
   const fieldId = getFieldId('image.name', 'selector');
 
@@ -40,25 +42,31 @@ const BuilderImageSelector: React.FC<BuilderImageSelectorProps> = ({
   }
 
   return (
-    <FormGroup fieldId={fieldId} label="Builder Image">
-      {isRecommending && (
+    <FormGroup fieldId={fieldId} label={t('devconsole~Builder Image')}>
+      {isRecommending && !recommended && (
         <>
-          <LoadingInline /> Detecting recommended builder images...
+          <LoadingInline /> {t('devconsole~Detecting recommended builder images...')}
         </>
       )}
       {recommended && builderImages.hasOwnProperty(recommended) && (
         <>
-          <Alert variant="success" title="Builder image(s) detected." isInline>
-            Recommended builder images are represented by{' '}
-            <StarIcon style={{ color: 'var(--pf-global--primary-color--100)' }} /> icon.
+          <Alert variant="success" title={t('devconsole~Builder image(s) detected.')} isInline>
+            <Trans ns="devconsole" t={t}>
+              Recommended builder images are represented by{' '}
+              <StarIcon style={{ color: 'var(--pf-global--primary-color--100)' }} /> icon.
+            </Trans>
           </Alert>
           <br />
         </>
       )}
       {(couldNotRecommend || (recommended && !builderImages.hasOwnProperty(recommended))) && (
         <>
-          <Alert variant="warning" title="Unable to detect the builder image." isInline>
-            Select the most appropriate one from the list to continue.
+          <Alert
+            variant="warning"
+            title={t('devconsole~Unable to detect the builder image.')}
+            isInline
+          >
+            {t('devconsole~Select the most appropriate one from the list to continue.')}
           </Alert>
           <br />
         </>
@@ -68,6 +76,11 @@ const BuilderImageSelector: React.FC<BuilderImageSelectorProps> = ({
         name="image.selected"
         loadingItems={loadingImageStream}
         recommended={values.image.recommended}
+        onSelect={() => {
+          setFieldValue('image.tag', '', false);
+          setFieldTouched('image.tag', true);
+          validateForm();
+        }}
       />
     </FormGroup>
   );

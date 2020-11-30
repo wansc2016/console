@@ -3,13 +3,21 @@ import { shallow } from 'enzyme';
 import { FormFooter } from '@console/shared';
 import { formikFormProps } from '@console/shared/src/test-utils/formik-props-utils';
 import { ContainerDropdown, ResourceLink } from '@console/internal/components/utils';
+import { sampleDeployments } from '@console/shared/src/utils/__tests__/test-resource-data';
 import AddHealthChecks from '../AddHealthChecks';
-import { sampleDeployments } from '../../topology/__tests__/topology-test-data';
 import { getHealthChecksData } from '../create-health-checks-probe-utils';
 import { getResourcesType } from '../../edit-application/edit-application-utils';
 import HealthChecks from '../HealthChecks';
 
 let addHealthCheckProbs: React.ComponentProps<typeof AddHealthChecks>;
+
+jest.mock('react-i18next', () => {
+  const reactI18next = require.requireActual('react-i18next');
+  return {
+    ...reactI18next,
+    useTranslation: () => ({ t: (key) => key }),
+  };
+});
 
 describe('AddHealthCheck', () => {
   beforeEach(() => {

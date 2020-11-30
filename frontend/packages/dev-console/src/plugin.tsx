@@ -12,6 +12,7 @@ import {
   ModelDefinition,
   ModelFeatureFlag,
   KebabActions,
+  NavSection,
   HrefNavItem,
   ResourceNSNavItem,
   ResourceClusterNavItem,
@@ -22,12 +23,11 @@ import {
   OverviewResourceTab,
   YAMLTemplate,
   OverviewTabSection,
-  ReduxReducer,
   GuidedTour,
+  PostFormSubmissionAction,
 } from '@console/plugin-sdk';
 import { NamespaceRedirect } from '@console/internal/components/utils/namespace-redirect';
 import { FLAGS } from '@console/shared/src/constants';
-import { referenceForModel } from '@console/internal/module/k8s';
 import * as helmIcon from '@console/internal/imgs/logos/helm.svg';
 import {
   BuildConfigModel,
@@ -39,51 +39,22 @@ import {
   ImageStreamImportsModel,
   ConfigMapModel,
 } from '@console/internal/models';
+import { doConnectsToBinding } from '@console/topology/src/utils/connector-utils';
 import * as models from './models';
 import { getKebabActionsForKind } from './utils/kebab-actions';
-import { FLAG_OPENSHIFT_PIPELINE, ALLOW_SERVICE_BINDING, FLAG_OPENSHIFT_GITOPS } from './const';
-import {
-  newPipelineTemplate,
-  newTaskTemplate,
-  newTaskRunTemplate,
-  newPipelineResourceTemplate,
-  newClusterTaskTemplate,
-} from './templates';
-import reducer from './utils/reducer';
+import { FLAG_OPENSHIFT_GITOPS, INCONTEXT_ACTIONS_CONNECTS_TO } from './const';
 import { AddAction } from './extensions/add-actions';
 import * as yamlIcon from './images/yaml.svg';
 import * as importGitIcon from './images/from-git.svg';
 import * as dockerfileIcon from './images/dockerfile.svg';
-import * as pipelineIcon from './images/pipeline.svg';
-import {
-  HelmTopologyConsumedExtensions,
-  helmTopologyPlugin,
-} from './components/topology/helm/helmTopologyPlugin';
-import {
-  OperatorsTopologyConsumedExtensions,
-  operatorsTopologyPlugin,
-} from './components/topology/operators/operatorsTopologyPlugin';
-import { pipelinesTopologyPlugin } from './components/topology/pipelines/pipelinesTopologyPlugin';
 import { usePerspectiveDetection } from './utils/usePerspectiveDetection';
 import { getGuidedTour } from './components/guided-tour';
-
-const {
-  ClusterTaskModel,
-  PipelineModel,
-  PipelineResourceModel,
-  PipelineRunModel,
-  ConditionModel,
-  TaskModel,
-  TaskRunModel,
-  EventListenerModel,
-  TriggerTemplateModel,
-  TriggerBindingModel,
-  ClusterTriggerBindingModel,
-} = models;
+import { CatalogConsumedExtensions, catalogPlugin } from './components/catalog/catalog-plugin';
 
 type ConsumedExtensions =
   | ModelDefinition
   | ModelFeatureFlag
+  | NavSection
   | HrefNavItem
   | ResourceClusterNavItem
   | ResourceNSNavItem
@@ -91,15 +62,14 @@ type ConsumedExtensions =
   | ResourceDetailsPage
   | Perspective
   | RoutePage
-  | ReduxReducer
   | KebabActions
   | OverviewResourceTab
   | YAMLTemplate
   | OverviewTabSection
   | AddAction
   | GuidedTour
-  | HelmTopologyConsumedExtensions
-  | OperatorsTopologyConsumedExtensions;
+  | PostFormSubmissionAction
+  | CatalogConsumedExtensions;
 
 const plugin: Plugin<ConsumedExtensions> = [
   {
@@ -111,31 +81,33 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'FeatureFlag/Model',
     properties: {
-      model: models.PipelineModel,
-      flag: FLAG_OPENSHIFT_PIPELINE,
-    },
-  },
-  {
-    type: 'FeatureFlag/Model',
-    properties: {
-      model: models.ServiceBindingModel,
-      flag: ALLOW_SERVICE_BINDING,
-    },
-  },
-  {
-    type: 'FeatureFlag/Model',
-    properties: {
       model: models.GitOpsServiceModel,
       flag: FLAG_OPENSHIFT_GITOPS,
     },
   },
   {
+    type: 'Nav/Section',
+    properties: {
+      id: 'top',
+      perspective: 'dev',
+    },
+  },
+  {
+    type: 'Nav/Section',
+    properties: {
+      id: 'resources',
+      perspective: 'dev',
+    },
+  },
+  {
     type: 'NavItem/Href',
     properties: {
+      id: 'add',
       perspective: 'dev',
-      group: 'top',
+      section: 'top',
       componentProps: {
-        name: '+Add',
+        // t('devconsole~+Add')
+        name: '%devconsole~+Add%',
         href: '/add',
         testID: '+Add-header',
       },
@@ -144,10 +116,12 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/Href',
     properties: {
+      id: 'topology',
       perspective: 'dev',
-      group: 'top',
+      section: 'top',
       componentProps: {
-        name: 'Topology',
+        // t('devconsole~Topology')
+        name: '%devconsole~Topology%',
         href: '/topology',
         testID: 'topology-header',
       },
@@ -159,10 +133,12 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/Href',
     properties: {
+      id: 'monitoring',
       perspective: 'dev',
-      group: 'top',
+      section: 'top',
       componentProps: {
-        name: 'Monitoring',
+        // t('devconsole~Monitoring')
+        name: '%devconsole~Monitoring%',
         href: '/dev-monitoring',
         testID: 'monitoring-header',
         'data-tour-id': 'tour-monitoring-nav',
@@ -175,10 +151,12 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/Href',
     properties: {
+      id: 'search',
       perspective: 'dev',
-      group: 'top',
+      section: 'top',
       componentProps: {
-        name: 'Search',
+        // t('devconsole~Search')
+        name: '%devconsole~Search%',
         href: '/search',
         testID: 'search-header',
         'data-tour-id': 'tour-search-nav',
@@ -188,10 +166,12 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/ResourceNS',
     properties: {
+      id: 'builds',
       perspective: 'dev',
-      group: 'resources',
+      section: 'resources',
       componentProps: {
-        name: 'Builds',
+        // t('devconsole~Builds')
+        name: '%devconsole~Builds%',
         resource: 'buildconfigs',
         testID: 'build-header',
       },
@@ -201,27 +181,14 @@ const plugin: Plugin<ConsumedExtensions> = [
     },
   },
   {
-    type: 'NavItem/ResourceNS',
-    properties: {
-      perspective: 'dev',
-      group: 'resources',
-      componentProps: {
-        name: PipelineModel.labelPlural,
-        resource: referenceForModel(PipelineModel),
-        testID: 'pipeline-header',
-      },
-    },
-    flags: {
-      required: [FLAG_OPENSHIFT_PIPELINE],
-    },
-  },
-  {
     type: 'NavItem/Href',
     properties: {
+      id: 'applicationstages',
       perspective: 'dev',
-      group: 'resources',
+      section: 'resources',
       componentProps: {
-        name: 'Application Stages',
+        // t('devconsole~Application Stages')
+        name: '%devconsole~Application Stages%',
         href: '/applicationstages',
         testID: 'application-stages-header',
       },
@@ -233,10 +200,12 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/Href',
     properties: {
+      id: 'helm',
       perspective: 'dev',
-      group: 'resources',
+      section: 'resources',
       componentProps: {
-        name: 'Helm',
+        // t('devconsole~Helm')
+        name: '%devconsole~Helm%',
         href: '/helm-releases',
         testID: 'helm-releases-header',
       },
@@ -248,10 +217,12 @@ const plugin: Plugin<ConsumedExtensions> = [
   {
     type: 'NavItem/Href',
     properties: {
+      id: 'project',
       perspective: 'dev',
-      group: 'resources',
+      section: 'resources',
       componentProps: {
-        name: 'Project',
+        // t('devconsole~Project')
+        name: '%devconsole~Project%',
         href: '/project-details',
         testID: 'project-details-header',
       },
@@ -261,61 +232,10 @@ const plugin: Plugin<ConsumedExtensions> = [
     },
   },
   {
-    type: 'NavItem/Href',
-    properties: {
-      perspective: 'admin',
-      section: 'Pipelines',
-      componentProps: {
-        name: PipelineModel.labelPlural,
-        href: '/pipelines',
-      },
-    },
-    flags: {
-      required: [FLAG_OPENSHIFT_PIPELINE],
-    },
-  },
-  {
-    type: 'NavItem/Href',
-    properties: {
-      perspective: 'admin',
-      section: 'Pipelines',
-      componentProps: {
-        name: TaskModel.labelPlural,
-        href: '/tasks',
-      },
-    },
-    flags: {
-      required: [FLAG_OPENSHIFT_PIPELINE],
-    },
-  },
-  {
-    type: 'NavItem/Href',
-    properties: {
-      perspective: 'admin',
-      section: 'Pipelines',
-      componentProps: {
-        name: 'Triggers',
-        href: '/triggers',
-      },
-    },
-    flags: {
-      required: [FLAG_OPENSHIFT_PIPELINE],
-    },
-  },
-  {
-    type: 'Overview/Section',
-    properties: {
-      key: 'pipelines',
-      loader: () =>
-        import(
-          './components/pipelines/pipeline-overview/PipelineOverview' /* webpackChunkName: "pipeline-overview-list" */
-        ).then((m) => m.default),
-    },
-  },
-  {
     type: 'Overview/Resource',
     properties: {
-      name: 'Monitoring',
+      // t('devconsole~Monitoring')
+      name: '%devconsole~Monitoring%',
       key: 'isMonitorable',
       loader: () =>
         import(
@@ -324,175 +244,11 @@ const plugin: Plugin<ConsumedExtensions> = [
     },
   },
   {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: PipelineModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/PipelineDetailsPage' /* webpackChunkName: "pipeline-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: PipelineRunModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelineruns/PipelineRunDetailsPage' /* webpackChunkName: "pipelinerun-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: PipelineResourceModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/detail-page-tabs/PipelineResourceDetailsPage' /* webpackChunkName: "pipelineresource-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: ConditionModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/detail-page-tabs/PipelineConditionDetailsPage' /* webpackChunkName: "pipelinecondition-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: TaskRunModel,
-      loader: async () =>
-        (
-          await import(
-            './components/taskruns/TaskRunDetailsPage' /* webpackChunkName: "taskrun-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: ClusterTaskModel,
-      loader: async () =>
-        (
-          await import(
-            './components/cluster-tasks/ClusterTaskDetailsPage' /* webpackChunkName: "clustertask-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: TaskModel,
-      loader: async () =>
-        (await import('./components/tasks/TaskDetailsPage' /* webpackChunkName: "task-details" */))
-          .default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: EventListenerModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/EventListenerPage' /* webpackChunkName: "eventlistener-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: TriggerTemplateModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/TriggerTemplatePage' /* webpackChunkName: "trigger-template-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: TriggerBindingModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/TriggerBindingPage' /* webpackChunkName: "trigger-binding-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/Details',
-    properties: {
-      model: ClusterTriggerBindingModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/ClusterTriggerBindingPage' /* webpackChunkName: "cluster-trigger-binding-details" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/List',
-    properties: {
-      model: PipelineModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/PipelinesResourceList' /* webpackChunkName: "pipeline-resource-list" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/List',
-    properties: {
-      model: PipelineRunModel,
-      loader: async () =>
-        (
-          await import(
-            './components/pipelineruns/PipelineRunsResourceList' /* webpackChunkName: "pipelinerun-resource-list" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Resource/List',
-    properties: {
-      model: TaskRunModel,
-      loader: async () =>
-        (
-          await import(
-            './components/taskruns/list-page/TaskRunsListPage' /* webpackChunkName: "taskrun-resource-list" */
-          )
-        ).default,
-    },
-  },
-  {
     type: 'Perspective',
     properties: {
       id: 'dev',
-      name: 'Developer',
+      // t('devconsole~Developer')
+      name: '%devconsole~Developer%',
       icon: <CodeIcon />,
       defaultPins: [ConfigMapModel.kind, SecretModel.kind],
       getLandingPageURL: () => '/topology',
@@ -509,15 +265,13 @@ const plugin: Plugin<ConsumedExtensions> = [
         '/add',
         '/import',
         '/import-sample',
+        '/catalog',
         '/samples',
         '/topology',
         '/deploy-image',
         '/project-details',
         '/dev-monitoring',
         '/helm-releases',
-        '/pipelines',
-        '/tasks',
-        '/triggers',
       ],
       component: NamespaceRedirect,
     },
@@ -547,6 +301,19 @@ const plugin: Plugin<ConsumedExtensions> = [
         (
           await import(
             './components/topology/TopologyPage' /* webpackChunkName: "dev-console-topology" */
+          )
+        ).default,
+    },
+  },
+  {
+    type: 'Page/Route',
+    properties: {
+      exact: true,
+      path: ['/catalog/all-namespaces', '/catalog/ns/:ns'],
+      loader: async () =>
+        (
+          await import(
+            './components/catalog/CatalogPage' /* webpackChunkName: "dev-console-extensible-catalog" */
           )
         ).default,
     },
@@ -652,105 +419,6 @@ const plugin: Plugin<ConsumedExtensions> = [
         (
           await import(
             './components/BuildConfigPage' /* webpackChunkName: "dev-console-buildconfigs" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      exact: false,
-      path: ['/pipelines/all-namespaces', '/pipelines/ns/:ns'],
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines-lists/PipelinesListsPage' /* webpackChunkName: "admin-pipeline" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      exact: false,
-      path: ['/tasks/all-namespaces', '/tasks/ns/:ns'],
-      loader: async () =>
-        (
-          await import(
-            './components/tasks/list-page/TasksListsPage' /* webpackChunkName: "admin-tasks`" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      exact: false,
-      path: ['/triggers/all-namespaces', '/triggers/ns/:ns'],
-      loader: async () =>
-        (
-          await import(
-            './components/triggers-lists/TriggersPage' /* webpackChunkName: "admin-triggers" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      perspective: 'dev',
-      exact: true,
-      path: [
-        `/k8s/all-namespaces/${referenceForModel(PipelineModel)}`,
-        `/k8s/ns/:ns/${referenceForModel(PipelineModel)}`,
-      ],
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/PipelinesPage' /* webpackChunkName: "pipeline-page" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      exact: true,
-      path: [`/k8s/ns/:ns/${referenceForModel(PipelineModel)}/~new/builder`],
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/pipeline-builder/PipelineBuilderPage' /* webpackChunkName: "pipeline-builder-page" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      exact: true,
-      path: [`/k8s/ns/:ns/${referenceForModel(PipelineModel)}/:pipelineName/builder`],
-      loader: async () =>
-        (
-          await import(
-            './components/pipelines/pipeline-builder/PipelineBuilderEditPage' /* webpackChunkName: "pipeline-builder-edit-page" */
-          )
-        ).default,
-    },
-  },
-  {
-    type: 'Page/Route',
-    properties: {
-      perspective: 'dev',
-      exact: true,
-      path: [
-        `/k8s/all-namespaces/${referenceForModel(PipelineRunModel)}`,
-        `/k8s/ns/:ns/${referenceForModel(PipelineRunModel)}`,
-      ],
-      loader: async () =>
-        (
-          await import(
-            './components/pipelineruns/PipelineRunsPage' /* webpackChunkName: "pipelinerun-page" */
           )
         ).default,
     },
@@ -938,51 +606,9 @@ const plugin: Plugin<ConsumedExtensions> = [
     },
   },
   {
-    type: 'ReduxReducer',
-    properties: {
-      namespace: 'devconsole',
-      reducer,
-    },
-  },
-  {
     type: 'KebabActions',
     properties: {
       getKebabActionsForKind,
-    },
-  },
-  {
-    type: 'YAMLTemplate',
-    properties: {
-      model: PipelineModel,
-      template: newPipelineTemplate,
-    },
-  },
-  {
-    type: 'YAMLTemplate',
-    properties: {
-      model: TaskModel,
-      template: newTaskTemplate,
-    },
-  },
-  {
-    type: 'YAMLTemplate',
-    properties: {
-      model: TaskRunModel,
-      template: newTaskRunTemplate,
-    },
-  },
-  {
-    type: 'YAMLTemplate',
-    properties: {
-      model: PipelineResourceModel,
-      template: newPipelineResourceTemplate,
-    },
-  },
-  {
-    type: 'YAMLTemplate',
-    properties: {
-      model: ClusterTaskModel,
-      template: newClusterTaskTemplate,
     },
   },
   {
@@ -990,8 +616,10 @@ const plugin: Plugin<ConsumedExtensions> = [
     properties: {
       id: 'import-from-samples',
       url: '/samples',
-      label: 'Samples',
-      description: 'Create an application from a code sample',
+      // t('devconsole~Samples')
+      label: '%devconsole~Samples%',
+      // t('devconsole~Create an application from a code sample')
+      description: '%devconsole~Create an application from a code sample%',
       icon: <LaptopCodeIcon />,
       accessReview: [
         BuildConfigModel,
@@ -1012,8 +640,10 @@ const plugin: Plugin<ConsumedExtensions> = [
     properties: {
       id: 'import-from-git',
       url: '/import',
-      label: 'From Git',
-      description: 'Import code from your Git repository to be built and deployed',
+      // t('devconsole~From Git')
+      label: '%devconsole~From Git%',
+      // t('devconsole~Import code from your Git repository to be built and deployed')
+      description: '%devconsole~Import code from your Git repository to be built and deployed%',
       icon: importGitIcon,
       accessReview: [
         BuildConfigModel,
@@ -1034,8 +664,11 @@ const plugin: Plugin<ConsumedExtensions> = [
     properties: {
       id: 'deploy-image',
       url: '/deploy-image',
-      label: 'Container Image',
-      description: 'Deploy an existing image from an image registry or image stream tag',
+      // t('devconsole~Container Image')
+      label: '%devconsole~Container Image%',
+      // t('devconsole~Deploy an existing image from an image registry or image stream tag')
+      description:
+        '%devconsole~Deploy an existing image from an image registry or image stream tag%',
       iconClass: 'pficon-image',
       accessReview: [
         BuildConfigModel,
@@ -1057,8 +690,11 @@ const plugin: Plugin<ConsumedExtensions> = [
     properties: {
       id: 'import-from-dockerfile',
       url: '/import?importType=docker',
-      label: 'From Dockerfile',
-      description: 'Import your Dockerfile from your Git repository to be built and deployed',
+      // t('devconsole~From Dockerfile')
+      label: '%devconsole~From Dockerfile%',
+      // t('devconsole~Import your Dockerfile from your Git repository to be built and deployed')
+      description:
+        '%devconsole~Import your Dockerfile from your Git repository to be built and deployed%',
       icon: dockerfileIcon,
       accessReview: [
         BuildConfigModel,
@@ -1079,8 +715,10 @@ const plugin: Plugin<ConsumedExtensions> = [
     properties: {
       id: 'import-yaml',
       url: '/k8s/ns/:namespace/import',
-      label: 'YAML',
-      description: 'Create resources from their YAML or JSON definitions',
+      // t('devconsole~YAML')
+      label: '%devconsole~YAML%',
+      // t('devconsole~Create resources from their YAML or JSON definitions')
+      description: '%devconsole~Create resources from their YAML or JSON definitions%',
       icon: yamlIcon,
     },
   },
@@ -1089,8 +727,10 @@ const plugin: Plugin<ConsumedExtensions> = [
     properties: {
       id: 'dev-catalog',
       url: '/catalog',
-      label: 'From Catalog',
-      description: 'Browse the catalog to discover, deploy and connect to services',
+      // t('devconsole~From Catalog')
+      label: '%devconsole~From Catalog%',
+      // t('devconsole~Browse the catalog to discover, deploy and connect to services')
+      description: '%devconsole~Browse the catalog to discover, deploy and connect to services%',
       icon: <CatalogIcon />,
     },
   },
@@ -1099,8 +739,11 @@ const plugin: Plugin<ConsumedExtensions> = [
     properties: {
       id: 'dev-catalog-databases',
       url: '/catalog?category=databases',
-      label: 'Database',
-      description: 'Browse the catalog to discover database services to add to your application',
+      // t('devconsole~Database')
+      label: '%devconsole~Database%',
+      // t('devconsole~Browse the catalog to discover database services to add to your application')
+      description:
+        '%devconsole~Browse the catalog to discover database services to add to your application%',
       icon: <DatabaseIcon />,
     },
   },
@@ -1108,9 +751,12 @@ const plugin: Plugin<ConsumedExtensions> = [
     type: 'AddAction',
     properties: {
       id: 'operator-backed',
-      url: '/catalog?kind=%5B"ClusterServiceVersion"%5D',
-      label: 'Operator Backed',
-      description: 'Browse the catalog to discover and deploy operator managed services',
+      url: '/catalog?catalogType=OperatorBackedService',
+      // t('devconsole~Operator Backed')
+      label: '%devconsole~Operator Backed%',
+      // t('devconsole~Browse the catalog to discover and deploy operator managed services')
+      description:
+        '%devconsole~Browse the catalog to discover and deploy operator managed services%',
       icon: <BoltIcon />,
     },
   },
@@ -1118,30 +764,12 @@ const plugin: Plugin<ConsumedExtensions> = [
     type: 'AddAction',
     properties: {
       id: 'helm',
-      url: '/catalog?kind=%5B"HelmChart"%5D',
-      label: 'Helm Chart',
-      description: 'Browse the catalog to discover and install Helm Charts',
+      url: '/catalog?catalogType=HelmChart',
+      // t('devconsole~Helm Chart')
+      label: '%devconsole~Helm Chart%',
+      // t('devconsole~Browse the catalog to discover and install Helm Charts')
+      description: '%devconsole~Browse the catalog to discover and install Helm Charts%',
       icon: helmIcon,
-    },
-  },
-  {
-    type: 'AddAction',
-    flags: {
-      required: [FLAG_OPENSHIFT_PIPELINE],
-    },
-    properties: {
-      id: 'pipeline',
-      url: `/k8s/ns/:namespace/${referenceForModel(PipelineModel)}/~new/builder`,
-      label: 'Pipeline',
-      description: 'Create a Tekton Pipeline to automate delivery of your application',
-      icon: pipelineIcon,
-      accessReview: [
-        {
-          group: PipelineModel.apiGroup,
-          resource: PipelineModel.plural,
-          verb: 'create',
-        },
-      ],
     },
   },
   {
@@ -1151,9 +779,14 @@ const plugin: Plugin<ConsumedExtensions> = [
       tour: getGuidedTour(),
     },
   },
-  ...helmTopologyPlugin,
-  ...operatorsTopologyPlugin,
-  ...pipelinesTopologyPlugin,
+  {
+    type: 'PostFormSubmissionAction',
+    properties: {
+      type: INCONTEXT_ACTIONS_CONNECTS_TO,
+      callback: doConnectsToBinding,
+    },
+  },
+  ...catalogPlugin,
 ];
 
 export default plugin;

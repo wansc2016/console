@@ -1,5 +1,7 @@
 export enum OperatingSystem {
   RHEL7 = 'Red Hat Enterprise Linux 7.0 or higher',
+  RHEL8 = 'Red Hat Enterprise Linux 8.0 or higher',
+  FEDORA = 'Fedora 31 or higher',
   CENTOS7 = 'CentOS 7 or higher',
   WINDOWS_10 = 'Microsoft Windows 10',
   VALIDATION_TEST = 'Validation Test',
@@ -18,9 +20,9 @@ export enum Flavor {
 }
 
 export enum Workload {
-  DESKTOP = 'desktop',
-  HIGH_PERFORMANCE = 'highperformance',
-  SERVER = 'server',
+  DESKTOP = 'Desktop',
+  HIGH_PERFORMANCE = 'High-performance',
+  SERVER = 'Server',
 }
 
 export enum Provider {

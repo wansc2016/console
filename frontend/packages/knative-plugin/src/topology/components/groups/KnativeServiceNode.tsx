@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 import {
   observer,
   Node,
@@ -21,9 +22,8 @@ import {
   nodeDragSourceSpec,
   GroupNode,
   GroupNodeAnchor,
-  useSearchFilter,
-  useAllowEdgeCreation,
-} from '@console/dev-console/src/components/topology';
+} from '@console/topology/src/components/graph-view';
+import { useSearchFilter, useAllowEdgeCreation } from '@console/topology/src/filters';
 import { TYPE_KNATIVE_SERVICE, EVENT_MARKER_RADIUS } from '../../const';
 
 type KnativeServiceNodeProps = {
@@ -52,6 +52,7 @@ const KnativeServiceNode: React.FC<KnativeServiceNodeProps> = ({
   onHideCreateConnector,
   onShowCreateConnector,
 }) => {
+  const { t } = useTranslation();
   const [hover, hoverRef] = useHover();
   const dragSpec = React.useMemo(() => nodeDragSourceSpec(TYPE_KNATIVE_SERVICE, true, editAccess), [
     editAccess,
@@ -117,7 +118,7 @@ const KnativeServiceNode: React.FC<KnativeServiceNodeProps> = ({
         element={element}
         typeIconClass="icon-knative"
         groupResources={groupResources}
-        emptyValue="No Revisions"
+        emptyValue={t('knative-plugin~No Revisions')}
       />
     </g>
   );

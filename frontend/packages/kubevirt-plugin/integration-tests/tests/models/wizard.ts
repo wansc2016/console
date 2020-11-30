@@ -9,6 +9,7 @@ import {
   enabledAsBoolean,
   selectItemFromDropdown,
   getResourceUID,
+  checkForError,
 } from '../utils/utils';
 import {
   CloudInitConfig,
@@ -23,12 +24,14 @@ import {
   KEBAP_ACTION,
   VIRTUALIZATION_TITLE,
   SEC,
+  // CHARACTERS_NOT_ALLOWED,
 } from '../utils/constants/common';
 import * as view from '../../views/wizard.view';
 import { NetworkInterfaceDialog } from '../dialogs/networkInterfaceDialog';
 import { DiskDialog } from '../dialogs/diskDialog';
 import { Flavor } from '../utils/constants/wizard';
 import { resourceHorizontalTab } from '../../views/uiResource.view';
+import { confirmActionButton } from '../../views/importWizard.view';
 import { virtualizationTitle } from '../../views/vms.list.view';
 import { VMBuilderData } from '../types/vm';
 import { ProvisionSource } from '../utils/constants/enums/provisionSource';
@@ -36,7 +39,7 @@ import { TemplateModel } from '@console/internal/models';
 import { templateCreateVMLink } from '../../views/template.view';
 
 export class Wizard {
-  async openWizard(model: K8sKind) {
+  async openWizard(model: K8sKind = null) {
     if (
       !(await virtualizationTitle.isPresent()) ||
       (await virtualizationTitle.getText()) !== VIRTUALIZATION_TITLE
@@ -85,6 +88,7 @@ export class Wizard {
 
   async fillName(name: string) {
     await fillInput(view.nameInput, name);
+    return checkForError(view.vmNameHelper);
   }
 
   async fillDescription(description: string) {
@@ -96,7 +100,7 @@ export class Wizard {
   }
 
   async selectFlavor(flavor: FlavorConfig) {
-    await selectItemFromDropdown(view.flavorSelect, view.dropDownItem(flavor.flavor));
+    await selectItemFromDropdown(view.flavorSelect, view.dropDownItemMain(flavor.flavor));
     if (flavor.flavor === Flavor.CUSTOM && (!flavor.memory || !flavor.cpu)) {
       throw Error('Custom Flavor requires memory and cpu values.');
     }
@@ -109,7 +113,10 @@ export class Wizard {
   }
 
   async selectWorkloadProfile(workloadProfile: string) {
-    await selectItemFromDropdown(view.workloadProfileSelect, view.dropDownItem(workloadProfile));
+    await selectItemFromDropdown(
+      view.workloadProfileSelect,
+      view.dropDownItemMain(workloadProfile),
+    );
   }
 
   async disableGoldenImageCloneCheckbox() {
@@ -129,7 +136,7 @@ export class Wizard {
   async selectProvisionSource(provisionSource: ProvisionSource) {
     await selectItemFromDropdown(
       view.provisionSourceSelect,
-      view.dropDownItemTitle(provisionSource.getDescription()),
+      view.dropDownItemMain(provisionSource.getDescription()),
     );
     if (provisionSource.getSource()) {
       await fillInput(
@@ -148,6 +155,8 @@ export class Wizard {
       await click(view.cloudInitCustomScriptCheckbox);
       await fillInput(view.customCloudInitScriptTextArea, cloudInitOptions.customScript);
     } else {
+      await click(view.cloudInitFirstOption);
+      await click(confirmActionButton);
       await fillInput(view.cloudInitHostname, cloudInitOptions.hostname || '');
       await asyncForEach(cloudInitOptions.sshKeys, async (sshKey: string, index: number) => {
         await fillInput(view.cloudInitSSHKey(index + 1), sshKey);
@@ -160,6 +169,7 @@ export class Wizard {
     await click(view.addNICButton);
     const addNICDialog = new NetworkInterfaceDialog();
     await addNICDialog.create(nic);
+    // const err = await addNICDialog.create(nic);
   }
 
   /**
@@ -230,7 +240,7 @@ export class Wizard {
     );
   }
 
-  async processGeneralStep(data: VMBuilderData) {
+  async processGeneralStep(data: VMBuilderData, ignoreWarnings: boolean = false) {
     const { name, description, provisionSource, os, flavor, workload } = data;
     if (name) {
       await this.fillName(name);
@@ -253,9 +263,8 @@ export class Wizard {
       if (provisionSource) {
         await this.disableGoldenImageCloneCheckbox();
         await this.selectProvisionSource(provisionSource);
-      } else {
-        throw Error('VM Provision source not defined');
       }
+
       if (workload) {
         await this.selectWorkloadProfile(workload);
       } else {
@@ -268,7 +277,7 @@ export class Wizard {
     } else {
       throw Error('VM Flavor not defined');
     }
-    await this.next();
+    await this.next(ignoreWarnings);
   }
 
   async processNetworkStep(data: VMBuilderData) {

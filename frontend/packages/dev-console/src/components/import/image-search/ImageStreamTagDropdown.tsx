@@ -1,12 +1,13 @@
 import * as React from 'react';
 import * as _ from 'lodash';
+import { useTranslation } from 'react-i18next';
 import * as fuzzy from 'fuzzysearch';
 import { useFormikContext, FormikValues, getIn } from 'formik';
 import { ValidatedOptions } from '@patternfly/react-core';
 import { DropdownField } from '@console/shared';
 import { k8sGet, K8sResourceKind, ContainerPort } from '@console/internal/module/k8s';
 import { ImageStreamTagModel } from '@console/internal/models';
-import { UNASSIGNED_KEY } from '../../../const';
+import { UNASSIGNED_KEY } from '@console/topology/src/const';
 import {
   getImageStreamTags,
   getPorts,
@@ -17,6 +18,7 @@ import {
 import { ImageStreamContext } from './ImageStreamContext';
 
 const ImageStreamTagDropdown: React.FC = () => {
+  const { t } = useTranslation();
   let imageStreamTagList = {};
   const {
     values: {
@@ -120,13 +122,15 @@ const ImageStreamTagDropdown: React.FC = () => {
   return (
     <DropdownField
       name="imageStream.tag"
-      label="Tag"
+      label={t('devconsole~Tag')}
       items={imageStreamTagList}
       key={imageStream.image}
       autocompleteFilter={fuzzy}
       title={
         imageStream.tag ||
-        (isNamespaceSelected && isImageStreamSelected && !isTagsAvailable ? 'No Tag' : 'Select Tag')
+        (isNamespaceSelected && isImageStreamSelected && !isTagsAvailable
+          ? t('devconsole~No Tag')
+          : t('devconsole~Select Tag'))
       }
       disabled={!isImageStreamSelected || !isTagsAvailable}
       fullWidth
