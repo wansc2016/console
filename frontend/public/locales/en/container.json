@@ -1,0 +1,8 @@
+{
+  "Always pull": "Always pull",
+  "Pull down a new copy of the container image whenever a new pod is created.": "Pull down a new copy of the container image whenever a new pod is created.",
+  "Pull if needed": "Pull if needed",
+  "If the container isn’t available locally, pull it down.": "If the container isn’t available locally, pull it down.",
+  "Never pull": "Never pull",
+  "Don't pull down a container image. If the correct container image doesn't exist locally, the pod will fail to start correctly.": "Don't pull down a container image. If the correct container image doesn't exist locally, the pod will fail to start correctly."
+}
